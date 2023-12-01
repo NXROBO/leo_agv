@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<!-- 
+	leo robot's description    
+	
+	Copyright 2023 NXROBO LIMITED.
+    http://www.nxrobo.com
+-->
+
+<robot name="leo" xmlns:xacro="http://ros.org/wiki/xacro">
+	<xacro:arg name="camera_type_tel" default="astrapro"/>
+	<xacro:arg name="lidar_type_tel"	default="3iroboticslidar2"/>
+  	<xacro:include filename="$(find leo_description)/urdf/leo_agv.urdf.xacro">
+		<xacro:arg name="camera_type_tel"	value="$(arg camera_type_tel)"/>	
+		<xacro:arg name="lidar_type_tel"	value="$(arg lidar_type_tel)"/>	
+	</xacro:include> 	
+</robot>

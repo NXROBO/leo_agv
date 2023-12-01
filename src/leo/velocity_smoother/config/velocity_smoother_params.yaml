@@ -1,0 +1,23 @@
+# Example configuration:
+# - velocity limits are around a 10% above the physical limits
+# - acceleration limits are just low enough to avoid jerking
+velocity_smoother:
+  ros__parameters:
+    # limits
+    speed_lim_v: 0.8
+    speed_lim_w: 5.4
+
+    accel_lim_v: 0.3
+    accel_lim_w: 3.5
+
+    # multiply the acceleration limit by this to permit faster decellerations
+    decel_factor: 1.0
+
+    # recompute smoothed velocities at this rate
+    frequency: 20.0
+
+    # feedback type:
+    #  0 - none
+    #  1 - odometry
+    #  2 - actual commanded velocity (e.g. after it's been piped through a mux)
+    feedback: 2

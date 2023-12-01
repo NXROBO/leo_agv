@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>leo_description</name>
+  <version>3.2.3</version>
+  <description>NXROBO leo description package</description>
+  <maintainer email="litian.zhuang@nxrobo.com">litian.zhuang</maintainer>
+  <license>Apache 2.0</license>
+
+  <url type="website">https://www.nxrobo.com</url>
+  <url type="bugtracker">https://github.com/nxrobo</url>
+
+  <author email="litian.zhuang@nxrobo.com">litian.zhuang</author>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+
+
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
