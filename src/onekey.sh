@@ -563,6 +563,7 @@ leo_build_map_3d(){
 }
 
 
+
 qrcode_transfer_files(){
 	eth_ip=`/sbin/ifconfig eth0|grep 'inet '|awk '{print $2}'`
 	wlp1s_ip=`/sbin/ifconfig wlp1s0|grep 'inet '|awk '{print $2}'`

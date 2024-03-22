@@ -46,7 +46,7 @@
 			rpy="0 0 0" />
 		<geometry>
 			<mesh
-			filename="package://leo_description/meshes/leo/base/leo_base.STL" />
+			filename="package://leo_description/meshes/leo/base/test/base_link.STL" />
 		</geometry>
 		<material
 			name="">
@@ -60,7 +60,7 @@
 			rpy="0 0 0" />
 		<geometry>
 			<mesh
-			filename="package://leo_description/meshes/leo/base/leo_base.STL" />
+			filename="package://leo_description/meshes/leo/base/test/base_link.STL" />
 		</geometry>
 		</collision>
 	</link>	

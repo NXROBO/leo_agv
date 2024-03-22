@@ -1,0 +1,373 @@
+<?xml version="1.0"?>
+<!-- 
+	leo_base.urdf.xacro  
+    Copyright (c) 2022, NXROBO Ltd.
+	Author: litian.zhuang 
+    litian.zhuang <litian.zhuang@nxrobo.com>  
+    All rights reserved.
+    http://www.nxrobo.com
+-->
+<robot name="leo_base_link">
+
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0299398920234792 0.0187235218400686 0.249808178961423"
+        rpy="0 0 0" />
+      <mass
+        value="23.0764320311823" />
+      <inertia
+        ixx="0.38631656418186"
+        ixy="-0.000514252660756516"
+        ixz="-0.00976928283614558"
+        iyy="0.57663248679916"
+        iyz="0.000777942625813988"
+        izz="0.91902287772661" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="wheel-l">
+    <inertial>
+      <origin
+        xyz="6.2874E-09 -0.033158 4.9715E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.61512" />
+      <inertia
+        ixx="0.0015259"
+        ixy="-3.0637E-11"
+        ixz="4.5439E-10"
+        iyy="0.0028616"
+        iyz="-6.3033E-08"
+        izz="0.001526" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel-l.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel-l.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wheel_l"
+    type="continuous">
+    <origin
+      xyz="-0.03227 0.22693 0.049567"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel-l" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="wheel_r">
+    <inertial>
+      <origin
+        xyz="-1.3014E-08 0.033158 -4.9717E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.61512" />
+      <inertia
+        ixx="0.0015259"
+        ixy="-2.1409E-10"
+        ixz="4.5162E-11"
+        iyy="0.0028616"
+        iyz="-6.3035E-08"
+        izz="0.001526" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wheel_r"
+    type="continuous">
+    <origin
+      xyz="-0.03227 -0.22693 0.049567"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_r" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="wheel_l_f">
+    <inertial>
+      <origin
+        xyz="1.9696E-10 -0.023749 -5.3967E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.082103" />
+      <inertia
+        ixx="2.1654E-05"
+        ixy="9.8137E-15"
+        ixz="1.3367E-13"
+        iyy="3.6595E-05"
+        iyz="1.4996E-12"
+        izz="2.1657E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_l_f.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_l_f.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wheel_l_f"
+    type="continuous">
+    <origin
+      xyz="0.16573 0.144 -0.0079"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_l_f" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="wheel_r_f">
+    <inertial>
+      <origin
+        xyz="0 0.024296 3.4694E-18"
+        rpy="0 0 0" />
+      <mass
+        value="0.08341" />
+      <inertia
+        ixx="2.2004E-05"
+        ixy="-8.1582E-22"
+        ixz="-3.998E-23"
+        iyy="3.6602E-05"
+        iyz="2.7502E-22"
+        izz="2.2004E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_r_f.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_r_f.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wheel_r_f"
+    type="continuous">
+    <origin
+      xyz="0.16573 -0.144 -0.0079"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_r_f" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="wheel_l_r">
+    <inertial>
+      <origin
+        xyz="-2.2204E-16 0.024301 -1.0408E-17"
+        rpy="0 0 0" />
+      <mass
+        value="0.081868" />
+      <inertia
+        ixx="2.1635E-05"
+        ixy="-9.2077E-22"
+        ixz="-3.998E-23"
+        iyy="3.6554E-05"
+        iyz="1.5746E-22"
+        izz="2.1635E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_l_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_l_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wheel_l_r"
+    type="continuous">
+    <origin
+      xyz="-0.27427 -0.144 -0.0079"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_l_r" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <link
+    name="wheel_r_r">
+    <inertial>
+      <origin
+        xyz="2.22044604925031E-16 -0.0236988434357127 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.0818683130278536" />
+      <inertia
+        ixx="2.16347627126981E-05"
+        ixy="-1.07633401471318E-21"
+        ixz="-3.99803962733964E-23"
+        iyy="3.6553749336634E-05"
+        iyz="2.74630297471843E-22"
+        izz="2.16347627126981E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_r_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://leo_description/meshes/leo/base/test/wheel_r_r.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wheel_r_r"
+    type="continuous">
+    <origin
+      xyz="-0.27427 0.144 -0.0079"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="wheel_r_r" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>			
+
+</robot>
+
+

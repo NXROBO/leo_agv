@@ -1,29 +1,25 @@
 /*
  *  Copyright (c) 2023, NXROBO Ltd.
- *  
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
- *  
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *  
+ *
  *  Authors: Litian Zhuang <litian.zhuang@nxrobo.com>
  */
 
-
 #include "leo_base/leo_base_interface.h"
 #include "leo_base/leo_base_driver.h"
-int flag = 0;
-
 namespace NxLeoBase
 {
-
   LeoBaseDriver::LeoBaseDriver(std::string new_serial_port) : rclcpp::Node("leo_base_node")
   {
     robot_yaw = 0;
@@ -50,18 +46,15 @@ namespace NxLeoBase
     search_sub = this->create_subscription<std_msgs::msg::String>(
         "leo_base/handle_search_dock", 10, std::bind(&LeoBaseDriver::handleSearchDock, this, std::placeholders::_1));
     wheel_joint_pub = this->create_publisher<sensor_msgs::msg::JointState>("wheel_states", 5);
-      auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
+    auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", qos);
-      tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     left_wheel_position = 0;
     right_wheel_position = 0;
     // publish wheel joint state with 0,0
     pubWheelJointStates(0, 0);
     startComParamInit();
-
     stimer = this->create_wall_timer(1s, std::bind(&LeoBaseDriver::checkSerialGoon, this));
-
     idx = 0;
     for (int x = 0; x < COUNT_TIMES; x++)
     {
@@ -74,6 +67,7 @@ namespace NxLeoBase
 
     RCLCPP_INFO(this->get_logger(), "inint ComDealDataNode");
   }
+  
   LeoBaseDriver::~LeoBaseDriver()
   {
     exit(0);
@@ -85,7 +79,7 @@ namespace NxLeoBase
     interface_port_->resetOdometry();
     if (interface_port_->openSerialPort() < 0)
     {
-      RCLCPP_FATAL(this->get_logger(), "Could not connect to %s.",serial_port.c_str());
+      RCLCPP_FATAL(this->get_logger(), "Could not connect to %s.", serial_port.c_str());
       return;
     }
     else
@@ -159,10 +153,10 @@ namespace NxLeoBase
     float value;
     unsigned char buffer[4];
   };
-short CharToShort(unsigned char cData[])
-{
-	return ((short)cData[1]<<8)|cData[0];
-}
+  short CharToShort(unsigned char cData[])
+  {
+    return ((short)cData[1] << 8) | cData[0];
+  }
 
   int LeoBaseDriver::pubGyroMessage(unsigned char *buf, int len)
   {
@@ -174,16 +168,15 @@ short CharToShort(unsigned char cData[])
     if (len < 18)
       return -1;
 
-    gyro.acvx = (float)CharToShort(&buf[0])/32768*16;
-    gyro.acvy = (float)CharToShort(&buf[2])/32768*16;
-    gyro.acvz = (float)CharToShort(&buf[4])/32768*16;
-    gyro.anvx = (float)CharToShort(&buf[6])/32768*2000;
-    gyro.anvy = (float)CharToShort(&buf[8])/32768*2000;
-    gyro.anvz = (float)CharToShort(&buf[10])/32768*2000;
-    gyro.roll = (float)CharToShort(&buf[12])/32768*180;
-    gyro.pitch = (float)CharToShort(&buf[14])/32768*180;
-    gyro.yaw = (float)CharToShort(&buf[16])/32768*180;
-
+    gyro.acvx = (float)CharToShort(&buf[0]) / 32768 * 16;
+    gyro.acvy = (float)CharToShort(&buf[2]) / 32768 * 16;
+    gyro.acvz = (float)CharToShort(&buf[4]) / 32768 * 16;
+    gyro.anvx = (float)CharToShort(&buf[6]) / 32768 * 2000;
+    gyro.anvy = (float)CharToShort(&buf[8]) / 32768 * 2000;
+    gyro.anvz = (float)CharToShort(&buf[10]) / 32768 * 2000;
+    gyro.roll = (float)CharToShort(&buf[12]) / 32768 * 180;
+    gyro.pitch = (float)CharToShort(&buf[14]) / 32768 * 180;
+    gyro.yaw = (float)CharToShort(&buf[16]) / 32768 * 180;
 
     robot_yaw = gyro.yaw / 180 * 3.1415926535898;
 
@@ -258,24 +251,7 @@ short CharToShort(unsigned char cData[])
 
     odom_msg->twist.twist.linear.x = interface_port_->robot_vel_[0];
     odom_msg->twist.twist.angular.z = interface_port_->robot_vel_[2];
-
-    // TODO(Will Son): Find more accurate covariance.
-    // odom_msg->pose.covariance[0] = 0.05;
-    // odom_msg->pose.covariance[7] = 0.05;
-    // odom_msg->pose.covariance[14] = 1.0e-9;
-    // odom_msg->pose.covariance[21] = 1.0e-9;
-    // odom_msg->pose.covariance[28] = 1.0e-9;
-    // odom_msg->pose.covariance[35] = 0.0872665;
-
-    // odom_msg->twist.covariance[0] = 0.001;
-    // odom_msg->twist.covariance[7] = 1.0e-9;
-    // odom_msg->twist.covariance[14] = 1.0e-9;
-    // odom_msg->twist.covariance[21] = 1.0e-9;
-    // odom_msg->twist.covariance[28] = 1.0e-9;
-    // odom_msg->twist.covariance[35] = 0.001;
-
     geometry_msgs::msg::TransformStamped odom_tf;
-
     odom_tf.transform.translation.x = odom_msg->pose.pose.position.x;
     odom_tf.transform.translation.y = odom_msg->pose.pose.position.y;
     odom_tf.transform.translation.z = odom_msg->pose.pose.position.z;
@@ -287,7 +263,8 @@ short CharToShort(unsigned char cData[])
 
     odom_pub_->publish(std::move(odom_msg));
 
-    if (true) {
+    if (true)
+    {
       tf_broadcaster_->sendTransform(odom_tf);
     }
   }
@@ -296,103 +273,16 @@ short CharToShort(unsigned char cData[])
     static bool last_touch = false;
     static bool last_plug = false;
     int curr_idx = (idx + COUNT_TIMES - 1) % COUNT_TIMES;
-    //double now_time = this->get_clock()->now().seconds();
+    // double now_time = this->get_clock()->now().seconds();
 
     fb_time[curr_idx] = interface_port_->current_time; // set leo base time which is different from ros time
     double odometry_x_ = interface_port_->odometry_x_;
     double odometry_y_ = interface_port_->odometry_y_;
     interface_port_->parseComInterfaceData(recvbuf, 0);
-    pubGyroMessage(recvbuf+20, 18);
+    pubGyroMessage(recvbuf + 20, 18);
 
     interface_port_->calculateOdometry_new();
-/*    if (true)
-    { // use gyro's yaw
-      interface_port_->odometry_yaw_ = robot_yaw;
-    }
-
-    // first, we'll publish the transforms over tf
-
-    geometry_msgs::msg::TransformStamped odom_trans;
-    rclcpp::Time time_now = this->get_clock()->now();
-    odom_trans.header.stamp = time_now;
-    odom_trans.header.frame_id = odom_frame_id;
-    odom_trans.child_frame_id = base_frame_id;
-    odom_trans.transform.translation.x = interface_port_->odometry_x_;
-    odom_trans.transform.translation.y = interface_port_->odometry_y_;
-    //    ROS_DEBUG("x=%f,y=%f",interface_port_->odometry_x_,interface_port_->odometry_y_);
-    odom_trans.transform.translation.z = 0.0;
-    tf2::Quaternion base_yaw;
-    base_yaw.setRPY(0, 0, interface_port_->odometry_yaw_);
-    geometry_msgs::msg::Quaternion odom_quaternion = tf2::toMsg(base_yaw);
-    odom_trans.transform.rotation = odom_quaternion;
-
-    tf_broadcaster->sendTransform(odom_trans);
-
-    // next, we'll publish the odometry message over ROS
-    nav_msgs::msg::Odometry odom;
-    odom.header.stamp = time_now;
-    odom.header.frame_id = odom_frame_id;
-
-    // printf("%f,%f\n",interface_port_->odometry_x_,interface_port_->odometry_y_);
-    // set the position
-    odom.pose.pose.position.x = interface_port_->odometry_x_;
-    odom.pose.pose.position.y = interface_port_->odometry_y_;
-    odom.pose.pose.position.z = 0.0;
-    odom.pose.pose.orientation = odom_quaternion;
-    double est_x = odom_x_kfilter.predict(interface_port_->wheel_dist);
-
-    odom_x[curr_idx] = est_x;
-    odom_yaw[curr_idx] = interface_port_->odometry_yaw_;
-
-    dt = (fb_time[curr_idx] - fb_time[idx]) * 0.0001;
-    vel_x_list[curr_idx] = (odom_x[curr_idx] - odom_x[idx]) / dt;
-    vel_x = 0;
-    for (int i = 0; i < COUNT_TIMES; i++)
-    {
-      vel_x += vel_x_list[i];
-    }
-    vel_x = vel_x / COUNT_TIMES;
-
-    vel_y = 0; //(odom_y[curr_idx] - odom_y[idx])/dt;
-
-    double delodom = (odom_yaw[curr_idx] - odom_yaw[idx]);
-    if (delodom > 3.14159265359)
-    {
-      delodom = delodom - 2 * 3.14159265359;
-    }
-    if (delodom < -3.14159265359)
-    {
-      delodom = delodom + 2 * 3.14159265359;
-    }
-    vel_yaw = delodom / dt;
-
-    double tmp_dist = 0;
-    fb_dist[curr_idx] = interface_port_->wheel_dist;
-    for (int i = 0; i < COUNT_TIMES; i++)
-    {
-      tmp_dist += fb_dist[i];
-    }
-
-    double fb_x = tmp_dist / dt;
-
-    idx = (idx + 1) % COUNT_TIMES;
-
-    odom.child_frame_id = base_frame_id;
-    odom.twist.twist.linear.x = vel_x;
-    odom.twist.twist.linear.y = vel_y;
-    odom.twist.twist.angular.z = vel_yaw;
-    // publish the odom's message
-
-    // add covariance
-    odom.pose.covariance[0] = pow(0.01, 2);
-    odom.pose.covariance[1] = pow(0.05, 2);
-    odom.pose.covariance[5] = pow(0.1, 2);
-    odom_pub->publish(odom);
-
-    // printf("odom x: %f\n",odom.pose.pose.position.x);
-    // publish the feedback's twist message from the leo base
-    fback_cmd_vel_pub->publish(odom.twist.twist);*/
-
+ 
     // publish wheel joint state
     pubWheelJointStates(vel_x, vel_yaw);
     // publish irbumper
@@ -403,24 +293,27 @@ short CharToShort(unsigned char cData[])
 
     sensor_msg.ir_bumper_left = interface_port_->ir_bumper_[LEFT];
     sensor_msg.ir_bumper_front_left = interface_port_->ir_bumper_[FRONT_LEFT];
-    sensor_msg.ir_bumper_front = interface_port_->ir_bumper_[FRONT];
     sensor_msg.ir_bumper_front_right = interface_port_->ir_bumper_[FRONT_RIGHT];
     sensor_msg.ir_bumper_right = interface_port_->ir_bumper_[RIGHT];
-    sensor_msg.ir_bumper_back_left = interface_port_->ir_bumper_[BACK_LEFT];
-    sensor_msg.ir_bumper_back_right = interface_port_->ir_bumper_[BACK_RIGHT];
+    sensor_msg.ir_bumper_back = interface_port_->ir_bumper_[BACK];
 
-    sensor_msg.cliff_left = interface_port_->cliff_[LEFT];
+    sensor_msg.ultrasonic_left = interface_port_->ultrasonic_[LEFT];
+    sensor_msg.ultrasonic_right = interface_port_->ultrasonic_[RIGHT];
+    sensor_msg.ultrasonic_front = interface_port_->ultrasonic_[FRONT];
+
     sensor_msg.cliff_front_left = interface_port_->cliff_[FRONT_LEFT];
     sensor_msg.cliff_front_right = interface_port_->cliff_[FRONT_RIGHT];
-    sensor_msg.cliff_right = interface_port_->cliff_[RIGHT];
-    sensor_msg.cliff_back_left = interface_port_->cliff_[BACK_LEFT];
     sensor_msg.cliff_back_right = interface_port_->cliff_[BACK_RIGHT];
+    sensor_msg.cliff_back_left = interface_port_->cliff_[BACK_LEFT];
 
-    sensor_msg.wheel_drop_left = interface_port_->wheel_drop_[LEFT];
-    sensor_msg.wheel_drop_right = interface_port_->wheel_drop_[RIGHT];
-    sensor_msg.wheel_over_current_left = interface_port_->wheel_over_current_[LEFT];
-    sensor_msg.wheel_over_current_right = interface_port_->wheel_over_current_[RIGHT];
+    sensor_msg.wheel_current_left = interface_port_->wheel_current_[LEFT];
+    sensor_msg.wheel_current_right = interface_port_->wheel_current_[RIGHT];
 
+    sensor_msg.wheel_velocity_left = interface_port_->wheel_velocity_[LEFT];
+    sensor_msg.wheel_velocity_right = interface_port_->wheel_velocity_[RIGHT];
+
+    sensor_msg.wheel_status_left = interface_port_->wheel_status_[LEFT];
+    sensor_msg.wheel_status_right = interface_port_->wheel_status_[RIGHT];
     rb_sensor_pub->publish(sensor_msg);
 
     leo_base::msg::LeoBaseDock dock_msg;
@@ -444,7 +337,6 @@ short CharToShort(unsigned char cData[])
     dock_msg.dock_dir_back = interface_port_->dock_direction_[BACK];
 
     rb_dock_pub->publish(dock_msg);
-
   }
 
   void LeoBaseDriver::handleGoDock(const std_msgs::msg::String::SharedPtr msg)
@@ -496,7 +388,7 @@ short CharToShort(unsigned char cData[])
     int i;
     for (i = 0; i < buf[2]; i++)
     {
-      sum += buf[i+3];
+      sum += buf[i + 3];
     }
     return sum;
   }
@@ -528,7 +420,7 @@ short CharToShort(unsigned char cData[])
     if (timediff > LEOBASETIMEOUT)
     {
       count = 0;
-       RCLCPP_ERROR(this->get_logger(), "nx-base time out-%lld\n", timediff);
+      RCLCPP_ERROR(this->get_logger(), "nx-base time out-%lld\n", timediff);
       headertime = currenttime;
     }
     if ((len + count) > 2048)
@@ -542,7 +434,7 @@ short CharToShort(unsigned char cData[])
   BACKCHECK:
     if (count > 2)
     {
-      //hex_printf(buf, len);
+      // hex_printf(buf, len);
       int checkcount = count - 1;
       for (i = 0; i < checkcount; i++)
       {
@@ -579,7 +471,7 @@ short CharToShort(unsigned char cData[])
       }
       if (count > 3)
       {
-        unsigned int framelen = recvbuf[2]+5;
+        unsigned int framelen = recvbuf[2] + 5;
         if (recvbuf[2] < 2)
         {
           count = 0;
@@ -600,9 +492,9 @@ short CharToShort(unsigned char cData[])
               {
                 if ((recvbuf[3] == 0x02)) // respone
                 {
-                  if(recvbuf[4] == 0x02)  //wheel message cmd
+                  if (recvbuf[4] == 0x02) // wheel message cmd
                   {
-                    dealMessageSwitch(recvbuf+5);
+                    dealMessageSwitch(recvbuf + 5);
                   }
                 }
               }
