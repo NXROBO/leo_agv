@@ -175,125 +175,7 @@ check_camera(){
 
 }
 
-#安装ROS完整版
-install_ros_full(){
-		sudo sh -c 'echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6'
-		sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
-		sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654		
-		sudo apt-get update
-		sudo apt-get install -y ros-${ROS_Ver}-desktop-full
-		sudo rosdep init
-		rosdep update
-		echo "source /opt/ros/${ROS_Ver}/setup.bash" >> ~/.bashrc
-		source /opt/ros/${ROS_Ver}/setup.bash
-		sudo apt-get install -y python-rosinstall python-rosinstall-generator python-wstool build-essential
-}
 
-#检测是否需要安装完整版
-check_install_ros_full(){
-	if [ -f "/usr/bin/rosversion" ]; then
-		ROSVER=`/usr/bin/rosversion -d`
-		if [ $ROSVER ]; then
-			echo -e "${Tip} 检测到当前系统已安装了ROS的${ROSVER}版本!" 
-			echo && stty erase ^? && read -p "请选择是否继续安装？ y/n：" choose
-			if [[ "${choose}" == "y" ]]; then
-				echo -e "${Info}准备安装ROS系统！" 
-			else
-				exit
-			fi
-		fi
-	fi
-	install_ros_full 
-}
-
-
-
-#安装intel_movidius的相关驱动和程序
-install_intel_movidius(){
-	BASEPATH=$(cd `dirname $0`; pwd)
-
-	if [[ ! -d "$BASEPATH/src/3rd_app/intel/ncappzoo" ]] || [[ ! -d "$BASEPATH/src/3rd_app/intel/ros_intel_movidius_ncs" ]]  || [[ ! -d "/opt/movidius" ]] ; then
-		echo && stty erase ^? && read -p "检测到未安装INTEL　MOVIDIUS的相关驱动和程序，是否现在安装y/n?" yorn 
-		if [[ "${yorn}" == "y" ]]; then
-			echo -e "${Info} 准备安装intel movidius的相关驱动和代码…… "
-			echo -e "${Info} 安装过程中可能会花费挺长时间的。请耐心等待！"
-			
-			cd $BASEPATH
-			mkdir $BASEPATH/src/3rd_app/intel
-			cd $BASEPATH/src/3rd_app/intel
-			echo -e "${Info} git clone https://github.com/movidius/ncsdk"
-			git clone https://github.com/movidius/ncsdk
-			echo -e "${Info} git clone https://github.com/movidius/ncappzoo"
-			git clone https://github.com/movidius/ncappzoo
-			echo -e "${Info} git clone https://github.com/intel/object_msgs"
-			git clone https://github.com/intel/object_msgs
-			echo -e "${Info} git clone https://github.com/intel/ros_intel_movidius_ncs.git"
-			git clone https://github.com/intel/ros_intel_movidius_ncs.git
-			cd $BASEPATH/src/3rd_app/intel/ncsdk
-			make install
-			make examples
-			echo -e "${Info} sudo ln -s $BASEPATH/src/3rd_app/intel/ncappzoo /opt/movidius/ncappzoo"
-			sudo ln -s $BASEPATH/src/3rd_app/intel/ncappzoo /opt/movidius/ncappzoo
-			cd $BASEPATH/src/3rd_app/intel/ros_intel_movidius_ncs
-			git checkout master
-	
-			cp $BASEPATH/src/3rd_app/intel/ros_intel_movidius_ncs/data/labels/* /opt/movidius/ncappzoo/data/ilsvrc12/
-
-		#	AlexNet
-			echo -e "${Info} compile NCS graph--AlexNet"
-			cd /opt/movidius/ncappzoo/caffe/AlexNet
-			make
-		#	GoogleNet
-			echo -e "${Info} compile NCS graph--GoogleNet"
-			cd /opt/movidius/ncappzoo/caffe/GoogLeNet
-			make
-		#	SqueezeNet
-			echo -e "${Info} compile NCS graph--SqueezeNet"
-			cd /opt/movidius/ncappzoo/caffe/SqueezeNet
-			make
-		#	Inception_V1
-			echo -e "${Info} compile NCS graph--Inception_V1"
-			cd /opt/movidius/ncappzoo/tensorflow/inception_v1/
-			make
-		#	Inception_V2
-			echo -e "${Info} compile NCS graph--Inception_V2"
-			cd /opt/movidius/ncappzoo/tensorflow/inception_v2/
-			make
-		#	Inception_V3
-			echo -e "${Info} compile NCS graph--Inception_V3"
-			cd /opt/movidius/ncappzoo/tensorflow/inception_v3/
-			make
-		#	Inception_V4
-			echo -e "${Info} compile NCS graph--Inception_V4"
-			cd /opt/movidius/ncappzoo/tensorflow/inception_v4/
-			make
-		#	MobileNet
-			echo -e "${Info} compile NCS graph--MobileNet"
-			cd /opt/movidius/ncappzoo/tensorflow/mobilenets/
-			make
-
-		#	MobileNet_SSD
-			echo -e "${Info} compile NCS graph--MobileNet_SSD"
-			cd /opt/movidius/ncappzoo/caffe/SSD_MobileNet
-			make	
-		#	TinyYolo
-			echo -e "${Info} compile NCS graph--TinyYolo"
-			cd /opt/movidius/ncappzoo/caffe/TinyYolo
-			make
-
-			echo -e "${Info} finish compiling..."	
-			echo -e "${Info} start to catkin_make..."
-	
-			cd $BASEPATH
-			catkin_make
-			echo -e "${Info} finsh catkin_make..."
-		else
-			echo -e "${Info} 取消安装."
-			exit
-		fi
-	fi
-
-}
 
 #编译leo
 install_leo(){
@@ -402,6 +284,23 @@ people_follow(){
 	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
 	print_command "ros2 launch leo_follower leo_follower.launch.py camera_type_tel:=${CAMERATYPE}"
 	ros2 launch leo_follower leo_follower.launch.py camera_type_tel:=${CAMERATYPE} 
+}
+
+#物品识别
+leo_object_detector(){
+	echo -e "${Info}                  " 
+	echo -e "${Info}物品识别" 
+	PROJECTPATH=$(cd `dirname $0`; pwd)
+	source ${PROJECTPATH}/install/setup.bash
+
+	echo -e "${Info}                  " 
+	echo -e "${Info}开始物品识别"
+	echo -e "${Info}                  " 
+	echo -e "${Info}退出请输入：Ctrl + c " 
+	echo -e "${Info}" 
+	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+	print_command "ros2 launch yolov8_object_detector leo_yolov8_object_detector_teleop.launch.py camera_type_tel:=${CAMERATYPE}"
+	ros2 launch yolov8_object_detector leo_yolov8_object_detector_teleop.launch.py camera_type_tel:=${CAMERATYPE} 
 }
 
 
@@ -684,6 +583,7 @@ echo -e "
   ${Green_font_prefix}  4.${Font_color_suffix} 让LEO使用深度摄像头绘制地图
   ${Green_font_prefix}  5.${Font_color_suffix} 让LEO使用激光雷达进行导航
   ${Green_font_prefix}  6.${Font_color_suffix} 让LEO使用深度摄像头进行导航
+  ${Green_font_prefix}  7.${Font_color_suffix} 物品识别
   
 ————————————
 
@@ -714,6 +614,9 @@ case "$num" in
 	;;
 	6)
 	leo_navigation_3d
+	;;
+	7)
+	leo_object_detector
 	;;
 	100)
 	tell_us

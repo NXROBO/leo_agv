@@ -32,6 +32,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Position.msg"
   "msg/Status.msg"
   "msg/Classification2D.msg"
+  "msg/InferenceResult.msg"
+  "msg/VisionInference.msg"
+
   "srv/Scene.srv"
   DEPENDENCIES std_msgs sensor_msgs vision_msgs geometry_msgs
  )
