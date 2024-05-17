@@ -2,6 +2,6 @@
 Type=Application
 Name=start agv
 GenericName=agv_ui
-Icon=/home/nxrobo/leo_agv/doc/leo_agv.ico
-Exec=/home/nxrobo/leo_agv/doc/start_agv.sh
+Icon=~/leo_agv/doc/leo_agv.ico
+Exec=~/leo_agv/doc/start_agv.sh
 Terminal=true
