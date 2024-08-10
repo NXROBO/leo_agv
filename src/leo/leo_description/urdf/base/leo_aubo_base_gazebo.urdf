@@ -1,0 +1,212 @@
+<?xml version="1.0"?>
+<!-- 
+	leo_base.urdf.xacro  
+    Copyright (c) 2022, NXROBO Ltd.
+	Author: litian.zhuang 
+    litian.zhuang <litian.zhuang@nxrobo.com>  
+    All rights reserved.
+    http://www.nxrobo.com
+-->
+<robot name="leo_base_link">
+
+<link name="base_footprint"/>		
+	<link name="base_link"/>	
+		
+	<joint name="base_footprint_joint" type="fixed">
+		<origin xyz="0 0 0.0354" rpy="0 0 0" />
+		<parent link="base_footprint"/>
+		<child link="base_link" />
+	</joint>
+	
+	<link name="IMU_link"/>
+  	<joint name="IMU_joint" type="fixed">
+      		<origin xyz="0.104 -0.09 0.065" rpy="0 0 1.570796327" />
+      		<parent link="base_link"/>
+      		<child link="IMU_link"/>
+  	</joint>	
+	
+	<!--  xyz="-0.0083159 -0.00065744 0.10547" -->
+	<link name="body_base_link">
+		<inertial>
+		<origin
+			xyz="-0.083159 -0.0 0.010547"
+			rpy="0 0 0" />
+		<mass
+			value="12.0" /> <!--  14.01 -->
+		<inertia
+			ixx="0.36243"
+			ixy="0.0001465"
+			ixz="-0.011153"
+			iyy="0.56639"
+			iyz="0.00049813"
+			izz="0.8975" />
+		</inertial>
+		<visual>
+		<origin
+			xyz="0 0 0"
+			rpy="0 0 0" />
+		<geometry>
+			<mesh
+			filename="package://leo_description/meshes/leo/base/leo_base.STL" />
+		</geometry>
+		<material
+			name="">
+			<color
+			rgba="0.79216 0.81961 0.93333 1" />
+		</material>
+		</visual>
+		<collision>
+		<origin
+			xyz="0 0 0"
+			rpy="0 0 0" />
+		<geometry>
+			<mesh
+			filename="package://leo_description/meshes/leo/base/leo_base.STL" />
+		</geometry>
+		</collision>
+	</link>	
+
+	<joint name="body_base_joint" type="fixed">
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<parent link="base_link"/>
+		<child link="body_base_link" />
+		    <!-- \u6dfb\u52a0\u5173\u8282\u9650\u4f4d -->
+    	<!-- <limit lower="-3.05" upper="3.05"/> -->
+	</joint>
+	
+
+ 	<!--wheel link and joint-->
+	<link name="left_wheel_link">
+		<inertial>
+		  <origin
+		    xyz="-1.2425E-09 0.031035 4.9722E-06"
+		    rpy="0 0 0" />
+		  <mass
+		    value="0.61514" />
+		  <inertia
+				ixx="0.0015259"
+				ixy="1.1311E-11"
+				ixz="2.4809E-10"
+				iyy="0.0028617"
+				iyz="-6.3043E-08"
+				izz="0.001526" />
+		</inertial>
+		<visual>
+		  <origin
+		    xyz="0 0 0"
+		    rpy="0 0 0" />
+		  <geometry>
+		    <mesh
+		      filename="package://leo_description/meshes/leo/base/left_wheel.STL" />
+		  </geometry>
+		  <material
+			name="">
+			<color rgba="0.79216 0.81961 0.93333 1" />
+		</material>		  
+		</visual>
+		<collision>
+		  <origin
+		    xyz="0 0 0"
+		    rpy="0 0 0" />
+		  <geometry>
+		    <mesh
+		      filename="package://leo_description/meshes/leo/base/left_wheel.STL" />
+		  </geometry>
+		</collision>	
+	</link>  
+	 	<!--joint name="left_wheel_joint" type="continuous"-->
+	<joint name="left_wheel_joint" type="continuous">
+		<origin xyz="-0.032289 0.16193 0.049567" rpy="0 0 0" />
+		<parent link="base_link"/>
+		<child link="left_wheel_link" />
+    	<axis xyz="0 1 0" />
+	</joint> 	
+	
+	
+	
+	<link name="right_wheel_link">
+		<inertial>
+		  <origin
+			xyz="-2.6803E-08 -0.031035 -4.9719E-06"
+			rpy="0 0 0" />
+		  <mass
+		    value="0.61514" />
+		  <inertia
+			ixx="0.0015259"
+			ixy="-3.3051E-10"
+			ixz="4.1924E-10"
+			iyy="0.0028617"
+			iyz="-6.3044E-08"
+			izz="0.001526" />
+		</inertial>
+		<visual>
+		  <origin
+		    xyz="0 0 0"
+		    rpy="0 0 0" />
+		  <geometry>
+		    <mesh
+		      filename="package://leo_description/meshes/leo/base/right_wheel.STL" />
+		  </geometry>
+		  <material
+			name="">
+			<color
+			rgba="0.79216 0.81961 0.93333 1" />
+		  </material>		  
+		</visual>
+		<collision>
+		  <origin
+		    xyz="0 0 0"
+		    rpy="0 0 0" />
+		  <geometry>
+		    <mesh
+		      filename="package://leo_description/meshes/leo/base/right_wheel.STL" />
+		  </geometry>
+		</collision>	
+	</link>   
+		 	<!--joint name="right_wheel_joint" type="continuous"-->
+	<joint name="right_wheel_joint" type="continuous">
+		<origin xyz="-0.032289 -0.16193 0.049567" rpy="0 0 0" />
+		<axis xyz="0 1 0"/>
+		<parent link="base_link"/>
+		<child link="right_wheel_link" />
+	</joint> 
+
+
+		
+	<!--base gyro link and joint-->		
+	<link name="base_gyro_link"/>		
+	<joint name="base_gyro_joint" type="fixed">
+		<origin xyz="0.0761 0.0307 0.057" rpy="0 0 0" />
+		<parent link="base_link"/>
+		<child link="base_gyro_link" />
+	</joint>		
+
+		<!-- Gazebo插件 -->
+	<gazebo>
+		<plugin name="diff_drive_controller" filename="libgazebo_ros_diff_drive.so">
+		<ros>
+			<namespace>/</namespace>
+			<remapping>cmd_vel:=/cmd_vel</remapping>
+		</ros>
+		<robotNamespace/>
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+		<!-- kinematics -->
+		<wheel_separation>0.194.45</wheel_separation>
+		<wheel_diameter>0.17</wheel_diameter>
+		<!-- limits -->
+		<max_wheel_torque>60</max_wheel_torque>
+		<max_wheel_acceleration>1.0</max_wheel_acceleration>
+		<torque>50.0</torque>
+		<commandTopic>cmd_vel</commandTopic>
+		<odometryTopic>odom</odometryTopic>
+		<odometryFrame>odom</odometryFrame>
+		<robotBaseFrame>base_link</robotBaseFrame>
+		<updateRate>100</updateRate>
+		</plugin>
+
+  </gazebo>		
+
+</robot>
+
+

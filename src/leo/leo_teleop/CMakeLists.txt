@@ -43,10 +43,35 @@ target_include_directories(leo_teleop_node PUBLIC
 
 install(TARGETS leo_teleop_node
   DESTINATION lib/${PROJECT_NAME})
+install(
+    PROGRAMS scripts/keyboard_control_arm.sh
+    DESTINATION lib/${PROJECT_NAME})
 
 install(
     PROGRAMS scripts/keyboard_control.sh
     DESTINATION lib/${PROJECT_NAME})
+install(
+    PROGRAMS scripts/cmd_location_learn_guide.sh
+    DESTINATION lib/${PROJECT_NAME})
+install(
+    PROGRAMS scripts/location_learn_guide.sh
+    DESTINATION lib/${PROJECT_NAME})
+
+install(
+    PROGRAMS scripts/cmd_location_learn_farming.sh
+    DESTINATION lib/${PROJECT_NAME})
+    
+install(
+    PROGRAMS scripts/location_learn_farming.sh
+    DESTINATION lib/${PROJECT_NAME})
+    
+install(
+    PROGRAMS scripts/object_predict.sh
+    DESTINATION lib/${PROJECT_NAME})
+
+install(
+    PROGRAMS scripts/roi_hsv.sh
+    DESTINATION lib/${PROJECT_NAME})    
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

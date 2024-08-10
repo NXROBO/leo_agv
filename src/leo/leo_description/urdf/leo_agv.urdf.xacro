@@ -2,13 +2,22 @@
 
 <robot name="leo" xmlns:xacro="http://ros.org/wiki/xacro">
 
-	<xacro:arg name="enable_arm_tel"	default="false"/>
+	<xacro:arg name="robot_ip" default="127.0.0.1" />
+
+	<xacro:arg name="namespace" default='/' />
+	<xacro:property name="namespace"	value="$(arg namespace)"/>
+
+
+	<xacro:arg name="base_type_tel"	default="leo_base_normal"/>
+	<xacro:property name="base_type"	value="$(arg base_type_tel)"/>
+
+	<xacro:arg name="enable_arm_tel"	default="true"/>
 	<xacro:property name="enable_arm"	value="$(arg enable_arm_tel)"/>
 	
-	<xacro:arg name="arm_type_tel"	default="uarm"/>
+	<xacro:arg name="arm_type_tel"	default="aubo_ES3"/>
 	<xacro:property name="robot_arm_type"	value="$(arg arm_type_tel)"/>
 
-  	<xacro:arg name="camera_type_tel"	default="astrapro"/>
+  	<xacro:arg name="camera_type_tel"	default="d435"/>
 
 	<xacro:property name="camera"	value="$(arg camera_type_tel)"/>
 
@@ -16,7 +25,7 @@
 
 	<xacro:property name="lidar"	value="$(arg lidar_type_tel)"/>
 
-  	<xacro:include filename="$(find leo_description)/urdf/base/leo_base.urdf"/>  	
+  	<xacro:include filename="$(find leo_description)/urdf/base/leo_aubo_base.urdf"/>  	
   		
 	<xacro:if value="${lidar == 'ydlidar_g2'}">
 		<xacro:include filename="$(find ydlidar_ros2_driver)/urdf/ydlidar.urdf" />
@@ -32,15 +41,28 @@
 
 	<xacro:if value="${camera == 'd435'}">
 		<xacro:include filename="$(find realsense2_description)/urdf/leo_d435_camera.urdf.xacro"/>
+		<!-- <xacro:include filename="$(find realsense2_description)/urdf/leo_arm_d435_camera.urdf.xacro"/> -->
 	</xacro:if>
 
-	<xacro:if value="${enable_arm == 'true'}">
-		<xacro:if value="${robot_arm_type == 'sagittarius_arm'}">
-  			<xacro:include filename="$(find sagittarius_descriptions)/urdf/leo_sagittarius_descriptions.urdf"/>  
-		</xacro:if>
-        <xacro:if value="${robot_arm_type == 'uarm'}">
-  			<xacro:include filename="$(find swiftpro)/urdf/leo_pro_model.xacro"/>  
-		</xacro:if>
+	<xacro:if value="${robot_arm_type == 'aubo_ES3'}">
+		<!-- arm link -->
+		<!--   io communication related parameters-->
+		<xacro:arg name="rtu_device_name" default="/dev/ttyUSB0,115200,N,8,1" />
+		<!-- Simulation parameters -->
+		<xacro:arg name="use_fake_hardware" default="false" />
+		<xacro:arg name="tf_prefix" default="" />
+		<xacro:include filename="$(find aubo_description)/urdf/${robot_arm_type}.xacro"/>
+		<xacro:aubo_robot name="aubo"
+			parent="base_link"
+			robot_ip="$(arg robot_ip)"
+			tf_prefix="$(arg tf_prefix)"
+			aubo_type="${robot_arm_type}"
+			use_fake_hardware="$(arg use_fake_hardware)"
+			rtu_device_name="$(arg rtu_device_name)"
+		>
+		<!-- position robot in the world -->
+		<origin xyz="0.17 0.0 0.25" rpy="0.0 0.0 1.5708" />
+		</xacro:aubo_robot>
 	</xacro:if>
 
 </robot>

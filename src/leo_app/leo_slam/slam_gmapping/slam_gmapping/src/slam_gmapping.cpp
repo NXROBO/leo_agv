@@ -88,7 +88,7 @@ void SlamGmapping::init() {
     ymin_ = -10.0;
     xmax_ = 10.0;
     ymax_ = 10.0;
-    delta_ = 0.05;
+    delta_ = 0.10; // 0.05
     occ_thresh_ = 0.25;
     llsamplerange_ = 0.01;
     llsamplestep_ = 0.01;

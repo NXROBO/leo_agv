@@ -176,7 +176,30 @@
 		<origin xyz="0.0761 0.0307 0.057" rpy="0 0 0" />
 		<parent link="base_link"/>
 		<child link="base_gyro_link" />
-	</joint>			
+	</joint>	
+
+
+	<!-- Gazebo插件 -->
+	<gazebo>
+		<plugin name="diff_drive_controller" filename="libgazebo_ros_diff_drive.so">
+		<ros>
+			<namespace>/</namespace>
+			<remapping>cmd_vel:=/cmd_vel</remapping>
+		</ros>
+		<robotNamespace/>
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+		<wheelSeparation>0.5</wheelSeparation>
+		<wheelDiameter>0.2</wheelDiameter>
+		<torque>5.0</torque>
+		<commandTopic>cmd_vel</commandTopic>
+		<odometryTopic>odom</odometryTopic>
+		<odometryFrame>odom</odometryFrame>
+		<robotBaseFrame>base_link</robotBaseFrame>
+		<updateRate>50</updateRate>
+		</plugin>
+
+  </gazebo>		
 
 </robot>
 

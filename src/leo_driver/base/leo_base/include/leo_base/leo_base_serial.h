@@ -13,16 +13,22 @@
 #include <iterator>
 namespace NxLeoBase
 {
+
     class LeoSerial
     {
     public:
         LeoSerial(std::string dev_name, uint32_t baudrate);
+
         ~LeoSerial();
+
         int OpenSerial();
         int CloseSerial();
+
         int WriteBuffer(uint8_t *buf, uint16_t length);
+
         int GetDataGram(unsigned char *r_buffer, int *length);
         void hex_printf(unsigned char *buf, int len);
+
     private:
         std::string serial_name_;
         uint32_t baudrate_;

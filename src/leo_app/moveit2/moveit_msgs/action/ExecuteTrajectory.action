@@ -1,0 +1,14 @@
+# The trajectory to execute
+RobotTrajectory trajectory
+# The controller names to use for execution
+string[] controller_names
+
+---
+
+# Error code - encodes the overall reason for failure
+MoveItErrorCodes error_code
+
+---
+
+# The internal state that the move group action currently is in
+string state

@@ -1,0 +1,52 @@
+<!-- lidar -->
+<robot name="lidar_frame">
+	<link
+		name="lidar_link">
+		<inertial>
+		<origin
+			xyz="0 0 0"
+			rpy="0 0 0" />
+		<mass
+			value="0.034209" />
+		<inertia
+			ixx="1.7895E-05"
+			ixy="-1.9999E-07"
+			ixz="-1.0689E-07"
+			iyy="1.7764E-05"
+			iyz="1.9734E-08"
+			izz="3.3957E-05" />
+		</inertial>
+		<visual>
+		<origin
+			xyz="0 0 0"
+			rpy="0 0 0" />
+		<geometry>
+			<mesh
+			filename="package://leo_description/meshes/leo/sensors/ydlidar_g6.STL" />
+		</geometry>
+		<material
+			name="">
+			<color
+			rgba="1 1 1 1" />
+		</material>
+		</visual>
+		<collision>
+		<origin
+			xyz="0 0 0"
+			rpy="0 0 0" />
+		<geometry>
+			<mesh
+			filename="package://leo_description/meshes/leo/sensors/ydlidar_g6.STL" />
+		</geometry>
+		</collision>
+	</link>
+
+
+
+  	<joint name="lidar_joint" type="fixed">
+      		<origin xyz="-0.0024515 0.0013291 -0.519183" rpy="0 0 3.14" />
+      		<parent link="base_link"/>
+      		<child link="lidar_link"/>
+  	</joint>
+
+</robot>

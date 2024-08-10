@@ -27,6 +27,7 @@ namespace NxLeoBase
     this->declare_parameter("base_frame_id", "base_footprint");
     this->declare_parameter("odom_frame_id", "odom");
     this->declare_parameter("battery/status", 0);
+    this->declare_parameter("embed/software/version", "");
     this->get_parameter_or<std::string>("serial_port", serial_port, new_serial_port);
     this->get_parameter_or<std::string>("base_frame_id", base_frame_id, "base_footprint");
     this->get_parameter_or<std::string>("odom_frame_id", odom_frame_id, "odom");
@@ -49,6 +50,10 @@ namespace NxLeoBase
     auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", qos);
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
+    service_lbc = this->create_service<leo_base::srv::LeoBaseControl>(
+        "base_control_cmd",
+        std::bind(&LeoBaseDriver::handle_base_control_cmd, this, std::placeholders::_1, std::placeholders::_2));
     left_wheel_position = 0;
     right_wheel_position = 0;
     // publish wheel joint state with 0,0
@@ -67,7 +72,7 @@ namespace NxLeoBase
 
     RCLCPP_INFO(this->get_logger(), "inint ComDealDataNode");
   }
-  
+
   LeoBaseDriver::~LeoBaseDriver()
   {
     exit(0);
@@ -87,6 +92,33 @@ namespace NxLeoBase
       RCLCPP_INFO(this->get_logger(), "connect to leobase sucessfully.");
     }
     base_receive_thread_ = std::shared_ptr<std::thread>(new std::thread(std::bind(&LeoBaseDriver::process_base_receive_thread, this)));
+    sleep(1);
+    interface_port_->getEmbedSoftwareVersion();
+  }
+
+  void LeoBaseDriver::handle_base_control_cmd(const std::shared_ptr<leo_base::srv::LeoBaseControl::Request> request,
+                                              std::shared_ptr<leo_base::srv::LeoBaseControl::Response> response)
+  {
+    int cnt = 0;
+    if ((request->cmd >= request->CMD_BUMPER_CLEAN) && (request->cmd >= request->CMD_WHEEL_LOCK))
+    {
+      ret_short_cuts = 0xAA;
+      interface_port_->shortCuts(request->cmd, request->value);
+      while (1)
+      {
+        if(ret_short_cuts != 0xAA) 
+        {
+          response->ret = ret_short_cuts;
+          break;
+        } 
+        if(cnt++ > 200)
+          break;
+        usleep(10000);
+      }
+    }
+    response->ret = response->VALUE_FALSE;
+    RCLCPP_INFO(this->get_logger(), "Request: cmd = %d value = %d", request->cmd, request->value);
+    RCLCPP_INFO(this->get_logger(), "Response: %d", response->ret);
   }
 
   void LeoBaseDriver::resetOdomCb(const leo_base::msg::LeoBaseOdom::SharedPtr odom)
@@ -282,7 +314,7 @@ namespace NxLeoBase
     pubGyroMessage(recvbuf + 20, 18);
 
     interface_port_->calculateOdometry_new();
- 
+
     // publish wheel joint state
     pubWheelJointStates(vel_x, vel_yaw);
     // publish irbumper
@@ -296,6 +328,11 @@ namespace NxLeoBase
     sensor_msg.ir_bumper_front_right = interface_port_->ir_bumper_[FRONT_RIGHT];
     sensor_msg.ir_bumper_right = interface_port_->ir_bumper_[RIGHT];
     sensor_msg.ir_bumper_back = interface_port_->ir_bumper_[BACK];
+
+    sensor_msg.mechanical_bumper_back = interface_port_->mechainical_bumper_[BACK];
+    sensor_msg.mechanical_bumper_right = interface_port_->mechainical_bumper_[RIGHT];
+    sensor_msg.mechanical_bumper_left = interface_port_->mechainical_bumper_[LEFT];
+    sensor_msg.mechanical_bumper_front = interface_port_->mechainical_bumper_[FRONT];
 
     sensor_msg.ultrasonic_left = interface_port_->ultrasonic_[LEFT];
     sensor_msg.ultrasonic_right = interface_port_->ultrasonic_[RIGHT];
@@ -492,9 +529,22 @@ namespace NxLeoBase
               {
                 if ((recvbuf[3] == 0x02)) // respone
                 {
-                  if (recvbuf[4] == 0x02) // wheel message cmd
+                  switch(recvbuf[4])
                   {
-                    dealMessageSwitch(recvbuf + 5);
+                    case 0x02:      //sensor msg
+                      dealMessageSwitch(recvbuf + 5);
+                    break;
+                    case 0x0E:      // shortcuts cmd
+                      ret_short_cuts = recvbuf[6];
+                      printf("get the shortcuts cmd:%d, ret:%d\n", recvbuf[5], ret_short_cuts);
+                    break;
+                    case 0x09:      //version
+                      memset(driver_board_version, 0, sizeof(driver_board_version));
+                      memcpy(driver_board_version, recvbuf + 5, recvbuf[2]-2);
+                      printf("======the driver board software Version is %s=======\n", driver_board_version);
+                      this->set_parameter(rclcpp::Parameter("embed/software/version", driver_board_version));
+                      RCLCPP_WARN(this->get_logger(), "======the driver board software Version is %s=======", driver_board_version);
+                    break;
                   }
                 }
               }

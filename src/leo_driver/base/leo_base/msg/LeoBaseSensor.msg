@@ -4,6 +4,10 @@ bool ir_bumper_front_left
 bool ir_bumper_front_right
 bool ir_bumper_back
 
+bool mechanical_bumper_front
+bool mechanical_bumper_back
+bool mechanical_bumper_left
+bool mechanical_bumper_right
 
 bool cliff_front_left
 bool cliff_front_right
@@ -22,3 +26,8 @@ float32 wheel_velocity_right
 
 uint16 wheel_status_left
 uint16 wheel_status_right
+
+uint8 wheel_type
+bool wheel_lock
+bool enable_bumper
+bool bumper_protect_status

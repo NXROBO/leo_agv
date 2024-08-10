@@ -34,6 +34,8 @@ from launch.substitutions import (
 )
 from launch_ros.substitutions import FindPackageShare
 import xacro
+from launch.conditions import IfCondition, UnlessCondition
+from launch_ros.descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -50,7 +52,6 @@ def generate_launch_description():
             description=('Whether to enable arm'),
         )
     )
-     
 
     declared_arg.append(  
         DeclareLaunchArgument(
@@ -80,22 +81,74 @@ def generate_launch_description():
         )
     )
     
-    context = LaunchContext()
+    declared_arg.append(
+    DeclareLaunchArgument(
+            "tf_prefix",
+            default_value='',
+            description="Prefix of the joint names, useful for \
+        multi-robot setup. If changed than also joint names in the controllers' configuration \
+        have to be updated.",
+        )
+    )
+
+    declared_arg.append(
+        DeclareLaunchArgument(
+            "robot_ip",
+            default_value="192.168.47.101",
+            description="IP of robot computer. \
+            Used only if 'use_fake_hardware' parameter is false.",
+        )
+    )
+    declared_arg.append(
+        DeclareLaunchArgument(
+            'rtu_device_name',
+            default_value='/dev/ttyUSB0,115200,N,8,1',
+            description='Modbus RTU device info',
+        )
+    )
+    declared_arg.append(
+        DeclareLaunchArgument(
+            'base_type_tel',
+            default_value='leo_base_normal',
+            description='choose leo base type urdf',
+        )
+    )
+    declared_arg.append(
+        DeclareLaunchArgument(
+            "use_fake_hardware",
+            default_value="false",
+            description="Indicate whether robot is running with fake hardware mirroring command to its states.",
+        )
+    )
+    declared_arg.append(
+        DeclareLaunchArgument(
+            'start_description_rviz', 
+            default_value='false', 
+            choices=['true', 'false'],
+            description=('Whether to start rviz'),
+        )   
+    )
+
+    declared_arg.append(
+        DeclareLaunchArgument(# -----------修改---------------
+        'rviz_config', 
+        default_value='leo_base.rviz',
+        description='rviz_config',
+        )
+    )   
+
 
     enable_arm_tel =  LaunchConfiguration('enable_arm_tel')
     arm_type_tel = LaunchConfiguration('arm_type_tel')
     camera_type_tel = LaunchConfiguration('camera_type_tel')
     lidar_type_tel = LaunchConfiguration('lidar_type_tel')
-
-    '''
-    declared_arguments = {}
-    declared_arguments.update({                               
-                            'enable_arm_tel': str(enable_arm_tel), # 'Whether to enable arm'
-                            'arm_type_tel': str(arm_type_tel), # 'name of the arm.such as uarm , sagittarius_arm'
-                            'camera_type_tel': camera_type_tel, # 'choose the camera type. such as d435, astrapro'
-                            'lidar_type_tel': str(lidar_type_tel), #choose the lidar type. such as ydlidar_g6, ydlidar_g2
-                               })
-    '''
+    tf_prefix = LaunchConfiguration("tf_prefix")
+    robot_ip = LaunchConfiguration("robot_ip")
+    rtu_device_name = LaunchConfiguration("rtu_device_name")
+    base_type_tel = LaunchConfiguration("base_type_tel")
+    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
+    start_description_rviz = LaunchConfiguration('start_description_rviz') 
+    rviz_config = LaunchConfiguration('rviz_config')    
 
 
     '''
@@ -104,14 +157,13 @@ def generate_launch_description():
 
     pkg_path = os.path.join(get_package_share_directory('leo_description'))
     xacro_file = os.path.join(pkg_path,'urdf','leo_agv.urdf.xacro')
-    # robot_description_file = xacro.process_file(xacro_file,mappings=declared_arguments)
 
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             xacro_file,
-            " ",
+            ' ',
             "enable_arm_tel:=",
             enable_arm_tel,
             " ",
@@ -124,30 +176,62 @@ def generate_launch_description():
             "lidar_type_tel:=",
             lidar_type_tel,
             " ",
-            'gazebo:=ignition',
-            '',
-           
+            'tf_prefix:=',
+            tf_prefix,
+            " ",
+            'use_fake_hardware:=',
+            use_fake_hardware,
+            ' ',
+            'robot_ip:=',
+            robot_ip,
+            ' ',
+            'rtu_device_name:=',
+            rtu_device_name,
+            ' ',
+            'base_type_tel:=',
+            base_type_tel,
+            ' ',
+        ])
+
+
+    robot_description = {"robot_description": robot_description_content}
+    moveit_config_package = 'leo_aubo_moveit_config'
+    robot_description_semantic_content = ParameterValue(
+        Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [FindPackageShare(moveit_config_package), "srdf", "leo_agv.srdf.xacro"]
+            ),
+            " ",
+            "tf_prefix:=",
+            tf_prefix,
         ]
+    ),value_type=str)
+
+    robot_description_semantic = {"robot_description_semantic": robot_description_semantic_content} 
+
+    robot_description_kinematics = PathJoinSubstitution(
+        [FindPackageShare(moveit_config_package), "config", "kinematics.yaml"]
     )
     
     '''
       3.deifine the node
     '''
-
-    DeclareLaunchArgument(
-        'start_description_rviz', 
-        default_value='false', 
-        choices=['true', 'false'],
-        description=('Whether to start rviz'),
-    )   
-
-
-    rviz_config_dir = os.path.join(get_package_share_directory('leo_description'), 'rviz', 'urdf.rviz')
-    start_description_rviz = LaunchConfiguration('start_description_rviz')   
+    # 构建 rviz_config_dir 路径
+    rviz_config_dir = PathJoinSubstitution([
+        get_package_share_directory('leo_description'), 
+        'rviz', 
+        rviz_config
+    ])
+     
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
+        # namespace='/',
+        # condition=UnlessCondition(enable_arm_tel),
         parameters=[{
                 # 'robot_description': robot_description_file.toxml(),
                 'robot_description': robot_description_content,
@@ -158,13 +242,22 @@ def generate_launch_description():
     joint_state_publisher= Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
-        name='joint_state_publisher')
+        name='joint_state_publisher',
+        condition=UnlessCondition(enable_arm_tel)
+        )
+        
+
 
     rviz2_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        condition=IfCondition(start_description_rviz),
+        condition=IfCondition(enable_arm_tel),
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+        ],
         arguments=[
             '-d', rviz_config_dir,
         ],

@@ -34,7 +34,7 @@ namespace NxLeoBase
 #define M_PI 3.1415926535897932384626433832795
 
 //! leobase max encoder counts
-#define LEOBASE_MAX_ENCODER_COUNTS 0xFFFFFFF
+#define LEOBASE_MAX_ENCODER_COUNTS 0xFFFFFFFF
 #define LEOBASE_M_TO_RPM (60 / (M_PI * WHEEL_DIAMETER_M))
 #define LEOBASE_MM_TO_RPM (60 / (M_PI * WHEEL_DIAMETER_MM))
 #define WHEEL_PULSES_TO_M ((M_PI * WHEEL_DIAMETER_M) / 4096)
@@ -61,7 +61,8 @@ namespace NxLeoBase
     int drive(unsigned char enable, double linear_speed, double angular_speed);
     int driveDirect(unsigned char enable, int left_speed, int right_speed);
     int driveRPM(unsigned char enable, int left_speed_rpm_s, int right_speed_rpm_s);
-    int max();
+    int shortCuts(unsigned char cmd, unsigned char value);
+    int getEmbedSoftwareVersion();
     int goDock(int dock);
     int searchDock(int flag);
     unsigned char checkSum(unsigned char *buf);
@@ -73,12 +74,20 @@ namespace NxLeoBase
     double odometry_y_;
     double odometry_yaw_;
     double robot_vel_[3];
+    double imu_yaw_;
+
     float imu_angle;
-    bool cliff_[ENDPOS];             // 地检
-    bool bumper_[ENDPOS];            // 碰撞墙检
-    bool ir_bumper_[ENDPOS];         // 红外墙检
-    bool ultrasonic_[ENDPOS];        // 超声波
-    bool dock_;                      // 充电状态.
+    bool cliff_[ENDPOS];              // 地下探空检测
+    bool ir_bumper_[ENDPOS];          // 红外检测
+    bool mechainical_bumper_[ENDPOS]; // 机械碰撞，防撞条碰撞
+    bool ultrasonic_[ENDPOS];         // 超声波检测
+
+    unsigned char wheel_type;   // 轮子类型
+    bool wheel_lock;            // 轮子锁住／释放状态
+    bool enable_bumper;         // 使能防撞条碰撞保护功能
+    bool bumper_protect_status; // 是否进入碰撞保护状态
+
+    bool dock_;                      // ���״̬.
     float voltage_;                  //! Battery voltage in volts.
     char temperature_;               //! Battery temperature in C degrees.
     float charge_;                   //! Battery charge in Ah.
@@ -87,9 +96,9 @@ namespace NxLeoBase
     bool touch_charge_;              //! touch charge
     bool plug_charge_;               //! plug charge
     bool dock_direction_[ENDPOS];    //! dock direction
-    float wheel_current_[2];         // 轮子的电流
-    float wheel_velocity_[2];        // 轮子的速度
-    unsigned short wheel_status_[2]; // 轮子的状态
+    float wheel_current_[2];         // ���ӵĵ���
+    float wheel_velocity_[2];        // ���ӵ��ٶ�
+    unsigned short wheel_status_[2]; // ���ӵ�״̬
     int encoder_counts_[2];
     unsigned int last_encoder_counts_[2];
     unsigned int current_time; //! diff time.

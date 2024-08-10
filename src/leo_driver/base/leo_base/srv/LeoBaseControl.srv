@@ -1,0 +1,12 @@
+uint8 CMD_BUMPER_CLEAN = 1  #碰撞状态清除
+uint8 CMD_BUMPER_SWITCH = 2 #碰撞状态功能功能控制
+uint8 CMD_WHEEL_LOCK = 3    #电机解锁与锁舵控制
+
+
+
+uint8 cmd  
+uint8 value
+---
+uint8 VALUE_TRUE = 1        #置1值
+uint8 VALUE_FALSE = 0       #置0值
+uint8 ret  

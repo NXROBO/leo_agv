@@ -41,6 +41,7 @@ def generate_launch_description():
     enable_color = LaunchConfiguration('enable_color')
     align_depth_enable = LaunchConfiguration('align_depth.enable')
     enable_sync = LaunchConfiguration('enable_sync')
+    serial_no = LaunchConfiguration('serial_no')   
 
     #remappings = [('/camera/depth/points', '/camera/depth_registered/points')]
 
@@ -84,12 +85,19 @@ def generate_launch_description():
         choices=['true', 'false'],
         description='Whether to run align_depth.enable')
 
-         
     declare_enable_sync = DeclareLaunchArgument(
         'enable_sync', 
         default_value='true',
         choices=['true', 'false'],
-        description='Whether to run enable_sync')               
+        description='Whether to run enable_sync')            
+
+    declare_serial_no = DeclareLaunchArgument(
+        'serial_no', 
+        default_value="''",   # 243522071475
+        # choices=["'243522071475'", "'135122073920'"],
+        description='d435 camera serial number')
+
+
     # Specify the actions
     d435_camera_group = GroupAction([
         IncludeLaunchDescription(
@@ -101,6 +109,7 @@ def generate_launch_description():
                                 'enable_color': enable_color,
                                 'align_depth.enable': align_depth_enable,
                                 'enable_sync': enable_sync,
+                                'serial_no': serial_no, # 243522071475, 135122073920
                                 }.items()),
     ])
 
@@ -119,6 +128,7 @@ def generate_launch_description():
     ld.add_action(declare_enable_color)
     ld.add_action(declare_align_depth_enable)
     ld.add_action(declare_enable_sync)
+    ld.add_action(declare_serial_no)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(d435_camera_group)

@@ -36,9 +36,12 @@
 
 #ifndef LEO_BASE_MYLOCK_H_
 #define LEO_BASE_MYLOCK_H_
+
 #include <pthread.h>
 #include <iostream>
+
 using namespace std;
+
 namespace NxLeoBase
 {
 // locker interface

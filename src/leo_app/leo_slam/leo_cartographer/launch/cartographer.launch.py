@@ -23,17 +23,19 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import ThisLaunchFileDir
+from launch.conditions import IfCondition,UnlessCondition
 
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    enable_arm_tel = LaunchConfiguration('enable_arm_tel')
     leo_cartographer_prefix = get_package_share_directory('leo_cartographer')
     cartographer_config_dir = LaunchConfiguration('cartographer_config_dir', default=os.path.join(
                                                   leo_cartographer_prefix, 'config'))
     configuration_basename = LaunchConfiguration('configuration_basename',
                                                  default='leo_lds_2d.lua')
 
-    resolution = LaunchConfiguration('resolution', default='0.05')
+    resolution = LaunchConfiguration('resolution', default='0.01')
     publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
 
     rviz_config_dir = os.path.join(get_package_share_directory('leo_cartographer'),
@@ -52,6 +54,11 @@ def generate_launch_description():
             'use_sim_time',
             default_value='false',
             description='Use simulation (Gazebo) clock if true'),
+        DeclareLaunchArgument(
+            'enable_arm_tel', 
+            default_value='false',
+            choices=['true', 'false'],
+            description='Whether to run arm'),
 
         Node(
             package='cartographer_ros',
@@ -82,6 +89,7 @@ def generate_launch_description():
             package='rviz2',
             executable='rviz2',
             name='rviz2',
+            condition=UnlessCondition(enable_arm_tel),
             arguments=['-d', rviz_config_dir],
             parameters=[{'use_sim_time': use_sim_time}],
             output='screen'),

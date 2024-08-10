@@ -26,9 +26,55 @@ OSDescription=$(lsb_release -d --short)
 OSArch=$(uname -m)
 calibra_default="${filepath}/../.ros/camera_info"
 
+ifconfig_output=$(ifconfig eno1)
+inet_address=$(echo "$ifconfig_output" | grep -oP 'inet \K[\d.]+')
 
 calibration="calibration"
 color_block="color_block"
+
+
+if [[ -f /opt/leo_driver.txt ]]; then
+  readarray -t params < /opt/leo_driver.txt
+  LEO_STATU="1"
+  LEO_DRIVER="${params[0]}"
+  LEO_DEVICE="${params[1]}"
+  CAMERA_NUM="${params[2]}"
+  DEVICE_IP="${params[3]}"
+else
+  LEO_STATU="0"
+  LEO_DRIVER="diff"
+  LEO_DEVICE="None"
+  CAMERA_NUM="1"
+  DEVICE_IP="127.0.0.1"
+fi
+COLOR_DEVICE_IP="${Red_font_prefix}${params[3]}${Font_color_suffix}"
+COLOR_ADDRESS="${Red_font_prefix}${inet_address}${Font_color_suffix}"
+
+device_check(){
+ 	if [[ "${LEO_STATU}" == "1" ]]; then
+		if [[ "${LEO_DEVICE}" != "None" ]]; then
+			ENABLE_ARM_TEL="true"
+			echo -e "${Info} 当前机械臂类型: $LEO_DEVICE"
+		else
+			ENABLE_ARM_TEL="false"
+			echo -e "${Info} 当前没有使用机械臂"
+		fi
+	else
+		ENABLE_ARM_TEL="false"
+		echo -e "${Info} 当前机械臂类型: $LEO_DEVICE"
+		echo -e "${Error} 尚未配置类型，默认使用差速驱动，无机械臂模式"
+	fi
+}
+
+ip_check(){
+		echo -e "${Info} 当前系统有线网络IP: $COLOR_ADDRESS"
+		echo -e "${Info} 当前使用机械臂IP: $COLOR_DEVICE_IP"
+		ping_result=$(ping -w 2 $DEVICE_IP)
+		packet_loss=$(echo "$ping_result" | grep -oP '\d+(?=% packet loss)')
+		if [[ "${packet_loss}" != "0" ]]; then
+			echo -e "${Error} ${Red_font_prefix}无法连接至机械臂IP，请检查机械臂IP是否正确${Font_color_suffix}"
+		fi
+}
 
 #检查系统要求
 check_sys(){
@@ -65,6 +111,7 @@ check_dev(){
 	#检查雷达
 	check_lidar
 }
+
 
 #检查雷达设备
 check_lidar(){
@@ -175,7 +222,125 @@ check_camera(){
 
 }
 
+#安装ROS完整版
+install_ros_full(){
+		sudo sh -c 'echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6'
+		sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+		sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654		
+		sudo apt-get update
+		sudo apt-get install -y ros-${ROS_Ver}-desktop-full
+		sudo rosdep init
+		rosdep update
+		echo "source /opt/ros/${ROS_Ver}/setup.bash" >> ~/.bashrc
+		source /opt/ros/${ROS_Ver}/setup.bash
+		sudo apt-get install -y python-rosinstall python-rosinstall-generator python-wstool build-essential
+}
 
+#检测是否需要安装完整版
+check_install_ros_full(){
+	if [ -f "/usr/bin/rosversion" ]; then
+		ROSVER=`/usr/bin/rosversion -d`
+		if [ $ROSVER ]; then
+			echo -e "${Tip} 检测到当前系统已安装了ROS的${ROSVER}版本!" 
+			echo && stty erase ^? && read -p "请选择是否继续安装？ y/n：" choose
+			if [[ "${choose}" == "y" ]]; then
+				echo -e "${Info}准备安装ROS系统！" 
+			else
+				exit
+			fi
+		fi
+	fi
+	install_ros_full 
+}
+
+
+
+#安装intel_movidius的相关驱动和程序
+install_intel_movidius(){
+	BASEPATH=$(cd `dirname $0`; pwd)
+
+	if [[ ! -d "$BASEPATH/src/3rd_app/intel/ncappzoo" ]] || [[ ! -d "$BASEPATH/src/3rd_app/intel/ros_intel_movidius_ncs" ]]  || [[ ! -d "/opt/movidius" ]] ; then
+		echo && stty erase ^? && read -p "检测到未安装INTEL　MOVIDIUS的相关驱动和程序，是否现在安装y/n?" yorn 
+		if [[ "${yorn}" == "y" ]]; then
+			echo -e "${Info} 准备安装intel movidius的相关驱动和代码…… "
+			echo -e "${Info} 安装过程中可能会花费挺长时间的。请耐心等待！"
+			
+			cd $BASEPATH
+			mkdir $BASEPATH/src/3rd_app/intel
+			cd $BASEPATH/src/3rd_app/intel
+			echo -e "${Info} git clone https://github.com/movidius/ncsdk"
+			git clone https://github.com/movidius/ncsdk
+			echo -e "${Info} git clone https://github.com/movidius/ncappzoo"
+			git clone https://github.com/movidius/ncappzoo
+			echo -e "${Info} git clone https://github.com/intel/object_msgs"
+			git clone https://github.com/intel/object_msgs
+			echo -e "${Info} git clone https://github.com/intel/ros_intel_movidius_ncs.git"
+			git clone https://github.com/intel/ros_intel_movidius_ncs.git
+			cd $BASEPATH/src/3rd_app/intel/ncsdk
+			make install
+			make examples
+			echo -e "${Info} sudo ln -s $BASEPATH/src/3rd_app/intel/ncappzoo /opt/movidius/ncappzoo"
+			sudo ln -s $BASEPATH/src/3rd_app/intel/ncappzoo /opt/movidius/ncappzoo
+			cd $BASEPATH/src/3rd_app/intel/ros_intel_movidius_ncs
+			git checkout master
+	
+			cp $BASEPATH/src/3rd_app/intel/ros_intel_movidius_ncs/data/labels/* /opt/movidius/ncappzoo/data/ilsvrc12/
+
+		#	AlexNet
+			echo -e "${Info} compile NCS graph--AlexNet"
+			cd /opt/movidius/ncappzoo/caffe/AlexNet
+			make
+		#	GoogleNet
+			echo -e "${Info} compile NCS graph--GoogleNet"
+			cd /opt/movidius/ncappzoo/caffe/GoogLeNet
+			make
+		#	SqueezeNet
+			echo -e "${Info} compile NCS graph--SqueezeNet"
+			cd /opt/movidius/ncappzoo/caffe/SqueezeNet
+			make
+		#	Inception_V1
+			echo -e "${Info} compile NCS graph--Inception_V1"
+			cd /opt/movidius/ncappzoo/tensorflow/inception_v1/
+			make
+		#	Inception_V2
+			echo -e "${Info} compile NCS graph--Inception_V2"
+			cd /opt/movidius/ncappzoo/tensorflow/inception_v2/
+			make
+		#	Inception_V3
+			echo -e "${Info} compile NCS graph--Inception_V3"
+			cd /opt/movidius/ncappzoo/tensorflow/inception_v3/
+			make
+		#	Inception_V4
+			echo -e "${Info} compile NCS graph--Inception_V4"
+			cd /opt/movidius/ncappzoo/tensorflow/inception_v4/
+			make
+		#	MobileNet
+			echo -e "${Info} compile NCS graph--MobileNet"
+			cd /opt/movidius/ncappzoo/tensorflow/mobilenets/
+			make
+
+		#	MobileNet_SSD
+			echo -e "${Info} compile NCS graph--MobileNet_SSD"
+			cd /opt/movidius/ncappzoo/caffe/SSD_MobileNet
+			make	
+		#	TinyYolo
+			echo -e "${Info} compile NCS graph--TinyYolo"
+			cd /opt/movidius/ncappzoo/caffe/TinyYolo
+			make
+
+			echo -e "${Info} finish compiling..."	
+			echo -e "${Info} start to catkin_make..."
+	
+			cd $BASEPATH
+			catkin_make
+			echo -e "${Info} finsh catkin_make..."
+		else
+			echo -e "${Info} 取消安装."
+			exit
+		fi
+	fi
+
+}
 
 #编译leo
 install_leo(){
@@ -246,8 +411,8 @@ let_robot_go(){
 		echo -e "${Info}    退出请输入：Ctrl + c    " 
 		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
 
-		print_command "ros2 launch leo_teleop leo_joy_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} "
-		ros2 launch leo_teleop leo_joy_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} 
+		print_command "ros2 launch leo_teleop leo_joy_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}"
+		ros2 launch leo_teleop leo_joy_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}
 		;;
 		1)
 		echo -e "${Info}" 
@@ -262,8 +427,8 @@ let_robot_go(){
 		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
 
 
-		print_command "ros2 launch leo_teleop leo_keyboard_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} "
-		ros2 launch leo_teleop leo_keyboard_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} 
+		print_command "ros2 launch leo_teleop leo_keyboard_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}"
+		ros2 launch leo_teleop leo_keyboard_teleop.launch.py  camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE} robot_ip:=${DEVICE_IP}
 		;;
 	esac
 
@@ -282,25 +447,8 @@ people_follow(){
 	echo -e "${Info}退出请输入：Ctrl + c " 
 	echo -e "${Info}" 
 	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
-	print_command "ros2 launch leo_follower leo_follower.launch.py camera_type_tel:=${CAMERATYPE}"
-	ros2 launch leo_follower leo_follower.launch.py camera_type_tel:=${CAMERATYPE} 
-}
-
-#物品识别
-leo_object_detector(){
-	echo -e "${Info}                  " 
-	echo -e "${Info}物品识别" 
-	PROJECTPATH=$(cd `dirname $0`; pwd)
-	source ${PROJECTPATH}/install/setup.bash
-
-	echo -e "${Info}                  " 
-	echo -e "${Info}开始物品识别"
-	echo -e "${Info}                  " 
-	echo -e "${Info}退出请输入：Ctrl + c " 
-	echo -e "${Info}" 
-	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
-	print_command "ros2 launch yolov8_object_detector leo_yolov8_object_detector_teleop.launch.py camera_type_tel:=${CAMERATYPE}"
-	ros2 launch yolov8_object_detector leo_yolov8_object_detector_teleop.launch.py camera_type_tel:=${CAMERATYPE} 
+	print_command "ros2 launch leo_follower leo_follower.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}"
+	ros2 launch leo_follower leo_follower.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}
 }
 
 
@@ -319,8 +467,8 @@ leo_navigation_2d(){
 	echo -e "${Info}退出请输入：Ctrl + c " 
 	echo -e "${Info}" 
 	echo && stty erase '^?' && read -p "按回车键（Enter）开始：" 
-	print_command "ros2 launch leo_navigation2 start_leo_navigation2.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}"
-	ros2 launch leo_navigation2 start_leo_navigation2.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}
+	print_command "ros2 launch leo_navigation2 start_leo_navigation2.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_navigation2.rviz" 
+	ros2 launch leo_navigation2 start_leo_navigation2.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_navigation2.rviz
 }
 #让leo使用深度摄像头进行导航
 leo_navigation_3d(){
@@ -339,6 +487,7 @@ leo_navigation_3d(){
 	case "$slamnum" in
 		1)
 		SLAMTYPE="2d"
+		echo -e "${Error} 默认使用RTAB地图"
 		echo -e "${Info}B.导航正常启动后，点击‘2D Pose Estimate’后在地图上进行手动定位。"
 		;;
 		2)
@@ -346,7 +495,7 @@ leo_navigation_3d(){
 		echo -e "${Info}B.把机器人放到原来建图的原点。导航正常启动后，如需查看原来建立的３Ｄ地图，点击rviz的Display->Rtabmap cloud->Download map加载３Ｄ地图。"
 		;;
 		*)
-		echo -e "${Error} 错误，默认使用2D地图"
+		echo -e "${Error} 错误，默认使用RTAB地图"
 		SLAMTYPE="2d"
 		echo -e "${Info}B.导航正常启动后，点击‘2D Pose Estimate’后在地图上进行手动定位。"
 		;;
@@ -357,11 +506,11 @@ leo_navigation_3d(){
 	echo -e "${Info}" 
 	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
 	if [[ "${SLAMTYPE}" == "2d" ]]; then
-		print_command "roslaunch leo_navigation amcl_demo_rviz.launch camera_type_tel:=${CAMERATYPE}"
-		roslaunch leo_navigation amcl_demo_rviz.launch camera_type_tel:=${CAMERATYPE} 
+		print_command "ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='true' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz"	
+		ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='true' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz
 	else
-		print_command "ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='true'"	
-		ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='true'
+		print_command "ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='true' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz"	
+		ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='true' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz
 
 	fi	
 }
@@ -406,8 +555,8 @@ leo_build_map_2d(){
 	echo -e "${Info}退出请输入：Ctrl + c        " 
 	echo -e "${Info}" 
 	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
-	print_command "ros2 launch leo_slam_transfer start_build_map_${SLAMTYPE}.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} enable_arm_tel:='false'"
-	ros2 launch leo_slam_transfer start_build_map_${SLAMTYPE}.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} enable_arm_tel:='false'	
+	print_command "ros2 launch leo_slam_transfer start_build_map_${SLAMTYPE}.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}  base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_${SLAMTYPE}.rviz"
+	ros2 launch leo_slam_transfer start_build_map_${SLAMTYPE}.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}  base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_${SLAMTYPE}.rviz
 }
 
 #让leo使用深度摄像头绘制地图
@@ -449,16 +598,121 @@ leo_build_map_3d(){
 		echo -e "${Tip}" 
 		echo && stty erase ^? && read -p "请选择是否继续y/n：" choose
 		if [[ "${choose}" == "y" ]]; then
-			print_command "ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='false'"	
-			ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='false'
+			print_command "ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='false' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz"	
+			ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='false' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz
 		else
 			return
 		fi
         else
-        	print_command "roslaunch leo_slam depth_slam_teleop.launch slam_methods_tel:=${SLAMTYPE} camera_type_tel:=${CAMERATYPE}"
-		roslaunch leo_slam depth_slam_teleop.launch slam_methods_tel:=${SLAMTYPE} camera_type_tel:=${CAMERATYPE}
+			print_command "ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='false' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz"	
+			ros2 launch leo_rtab_map start_rtabmap_rgbd_sync.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE} localization:='false' base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP} rviz_config:=leo_arm_rtabmap.rviz
 	fi
 	
+}
+
+
+
+# 颜色方块标定
+hsv_cali(){
+	ip_check
+	echo -e "${Info}      颜色方块标定" 
+	# PROJECTPATH=$(cd `dirname $0`; pwd)
+	source /home/leo/leo_agv/install/setup.bash
+
+	echo -e "${Info}    标定开始前请将货物台放至距离狮子座正前方约15cm的位置，并在台上摆放三种（或以上）颜色的方块，如红蓝黄三色    " 
+
+	echo -e "${Info}    请先启动机械臂，再执行标定：
+	  ${Green_font_prefix}1.${Font_color_suffix} 启动机械臂和底盘驱动
+	  ${Green_font_prefix}2.${Font_color_suffix} 执行颜色方块标定
+	  ${Green_font_prefix}3.${Font_color_suffix} 退出请输入：Ctrl + c" 
+	echo && stty erase ^? && read -p "请输入数字 [1-2]：" ctrlnum
+	case "$ctrlnum" in
+		1)
+		echo -e "${Info}" 
+		echo -e "${Info} 启动机械臂和底盘驱动，若IP不正确请进行修改"
+		echo -e "${Info}"
+		echo -e "${Info}    退出请输入：Ctrl + c    " 
+		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+
+		print_command "ros2 launch leo_aubo_moveit_config leo_aubo_moveit_origin.launch.py aubo_type:=${LEO_DEVICE} robot_ip:=${DEVICE_IP} base_type:=${LEO_DRIVER}"
+		ros2 launch leo_aubo_moveit_config leo_aubo_moveit_origin.launch.py aubo_type:=${LEO_DEVICE} robot_ip:=${DEVICE_IP} use_planning:=true rtu_device_name:="/dev/ttyS7,115200,N,8,0 " base_type:=${LEO_DRIVER}
+		;;
+	
+		2)
+	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+
+	print_command "ros2 launch leo_grasp hsv_cali.launch.py"
+	ros2 launch leo_grasp hsv_cali.launch.py
+	
+	esac
+}
+
+# 让LEO使用机械臂抓取物体
+leo_grasp(){
+	ip_check
+	echo -e "${Info}      让LEO使用机械臂抓取物体" 
+	# PROJECTPATH=$(cd `dirname $0`; pwd)
+	source /home/leo/leo_agv/install/setup.bash
+
+	echo -e "${Info}    将货物台放至距离狮子座正前方约15cm的位置，并在台上摆放三种（或以上）颜色的方块，如红蓝黄三色，方块姿态需垂直于货物台，角度随意。放置台则放至狮子座左侧距离约20cm处。    " 
+
+	echo -e "${Info}    请先启动机械臂，再执行抓取：
+	  ${Green_font_prefix}1.${Font_color_suffix} 启动机械臂和底盘驱动
+	  ${Green_font_prefix}2.${Font_color_suffix} 执行抓取任务
+	  ${Green_font_prefix}3.${Font_color_suffix} 退出请输入：Ctrl + c" 
+	echo && stty erase ^? && read -p "请输入数字 [1-2]：" ctrlnum
+	case "$ctrlnum" in
+		1)
+		echo -e "${Info}" 
+		echo -e "${Info} 启动机械臂和底盘驱动，若IP不正确请进行修改"
+		echo -e "${Info}"
+		echo -e "${Info}    退出请输入：Ctrl + c    " 
+		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+
+		print_command "ros2 launch leo_aubo_moveit_config leo_aubo_moveit_origin.launch.py aubo_type:=${LEO_DEVICE} robot_ip:=${DEVICE_IP} base_type:=${LEO_DRIVER}"
+		ros2 launch leo_aubo_moveit_config leo_aubo_moveit_origin.launch.py aubo_type:=${LEO_DEVICE} robot_ip:=${DEVICE_IP} use_planning:=true rtu_device_name:="/dev/ttyS7,115200,N,8,0 " base_type:=${LEO_DRIVER}
+		;;
+	
+		2)
+		echo  && stty erase ^? && read -p "******     请输入放置台的高度，单位为厘米，默认为25.5cm，按回车键（Enter）开始：" table_h 
+		# 将输入的高度转换为米
+		table_h=$(echo "($table_h-4) * 0.01" | bc)
+		print_command "ros2 launch leo_grasp start_leo_grasp.launch.py table_h:=${table_h}"
+		ros2 launch leo_grasp start_leo_grasp.launch.py table_h:="'$table_h'"
+		;;
+	esac
+}
+
+# 让LEO使用深度学习进行肢体识别
+leo_yolo_pose(){
+	echo -e "${Info}" 
+	echo -e "${Info}      让LEO使用深度学习进行肢体识别" 
+	# PROJECTPATH=$(cd `dirname $0`; pwd)
+	source /home/leo/leo_agv/install/setup.bash
+
+	echo -e "${Info}    程序启动后，站在狮子座前方，摄像头会自动对身体姿态进行识别。    " 
+
+	echo -e "${Info}    退出请输入：Ctrl + c    " 
+	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+
+	print_command "ros2 launch leo_yolov8 leo_yolo_pose.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}  base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}"
+	ros2 launch leo_yolov8 leo_yolo_pose.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}  base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}
+}
+
+# 让LEO使用深度学习进行物体识别
+leo_yolo_object(){
+	echo -e "${Info}" 
+	echo -e "${Info}      让LEO使用深度学习进行物体识别" 
+	# PROJECTPATH=$(cd `dirname $0`; pwd)
+	source /home/leo/leo_agv/install/setup.bash
+
+	echo -e "${Info}    程序启动后，站在狮子座前方，摄像头会自动识别面前物体类型。    " 
+
+	echo -e "${Info}    退出请输入：Ctrl + c    " 
+	echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+
+	print_command "ros2 launch leo_yolov8 leo_yolo_object.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}  base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}"
+	ros2 launch leo_yolov8 leo_yolo_object.launch.py camera_type_tel:=${CAMERATYPE} lidar_type_tel:=${LIDARTYPE}  base_type:=${LEO_DRIVER} enable_arm_tel:=${ENABLE_ARM_TEL} arm_type_tel:=${LEO_DEVICE}  robot_ip:=${DEVICE_IP}
 }
 
 
@@ -572,59 +826,140 @@ echo -e "————————————
 "
 qrcode_picture
 
+
+if [ "$LEO_DEVICE"  == "None" ]; then
 echo -e "  
-  请根据右侧的功能说明选择相应的序号。
-  
-  ${Green_font_prefix}  0.${Font_color_suffix} 单独编译LEO
+请根据右侧的功能说明选择相应的序号。
+
+${Green_font_prefix}  0.${Font_color_suffix} 单独编译LEO
 ————————————
-  ${Green_font_prefix}  1.${Font_color_suffix} 让机器人动起来
-  ${Green_font_prefix}  2.${Font_color_suffix} 让LEO跟着你走
-  ${Green_font_prefix}  3.${Font_color_suffix} 让LEO使用激光雷达绘制地图
-  ${Green_font_prefix}  4.${Font_color_suffix} 让LEO使用深度摄像头绘制地图
-  ${Green_font_prefix}  5.${Font_color_suffix} 让LEO使用激光雷达进行导航
-  ${Green_font_prefix}  6.${Font_color_suffix} 让LEO使用深度摄像头进行导航
-  ${Green_font_prefix}  7.${Font_color_suffix} 物品识别
-  
+${Green_font_prefix}  1.${Font_color_suffix} 让机器人动起来
+${Green_font_prefix}  2.${Font_color_suffix} 让LEO跟着你走
+${Green_font_prefix}  3.${Font_color_suffix} 让LEO使用激光雷达绘制地图
+${Green_font_prefix}  4.${Font_color_suffix} 让LEO使用深度摄像头绘制地图
+${Green_font_prefix}  5.${Font_color_suffix} 让LEO使用激光雷达进行导航
+${Green_font_prefix}  6.${Font_color_suffix} 让LEO使用深度摄像头进行导航
+${Green_font_prefix}  7.${Font_color_suffix} 让LEO使用深度学习进行物体识别
+${Green_font_prefix}  8.${Font_color_suffix} 让LEO使用深度学习进行肢体识别
+
 ————————————
 
-  ${Green_font_prefix}100.${Font_color_suffix} 问题反馈
-  ${Green_font_prefix}104.${Font_color_suffix} 文件传输
- "
-menu_status
-check_dev
-echo && stty erase ^? && read -p "请输入数字：" num
-case "$num" in
-	0)
-	install_leo	
-	;;
-	1)
-	let_robot_go
-	;;
-	2)
-	people_follow
-	;;
-	3)
-	leo_build_map_2d
-	;;
-	4)
-	leo_build_map_3d
-	;;
-	5)
-	leo_navigation_2d
-	;;
-	6)
-	leo_navigation_3d
-	;;
-	7)
-	leo_object_detector
-	;;
-	100)
-	tell_us
-	;;
-	104)
-	qrcode_transfer_files
-	;;	
-	*)
-	echo -e "${Error} 请输入正确的数字 "
-	;;
-esac
+${Green_font_prefix}100.${Font_color_suffix} 问题反馈
+${Green_font_prefix}104.${Font_color_suffix} 文件传输
+	"
+	menu_status
+	check_dev
+	device_check
+	echo && stty erase ^? && read -p "请输入数字：" num
+	case "$num" in
+		0)
+		install_leo	
+		;;
+		1)
+		let_robot_go
+		;;
+		2)
+		people_follow
+		;;
+		3)
+		leo_build_map_2d
+		;;
+		4)
+		leo_build_map_3d
+		;;
+		5)
+		leo_navigation_2d
+		;;
+		6)
+		leo_navigation_3d
+		;;
+		7)
+		leo_yolo_object
+		;;
+		8)
+		leo_yolo_pose
+		;;
+		100)
+		tell_us
+		;;
+		104)
+		qrcode_transfer_files
+		;;	
+		*)
+		echo -e "${Error} 请输入正确的数字 "
+		;;
+	esac
+
+else
+	echo -e "  
+请根据右侧的功能说明选择相应的序号。
+
+${Green_font_prefix}  0.${Font_color_suffix} 单独编译LEO
+————————————
+${Green_font_prefix}  1.${Font_color_suffix} 让机器人动起来
+${Green_font_prefix}  2.${Font_color_suffix} 让LEO跟着你走
+${Green_font_prefix}  3.${Font_color_suffix} 让LEO使用激光雷达绘制地图
+${Green_font_prefix}  4.${Font_color_suffix} 让LEO使用深度摄像头绘制地图
+${Green_font_prefix}  5.${Font_color_suffix} 让LEO使用激光雷达进行导航
+${Green_font_prefix}  6.${Font_color_suffix} 让LEO使用深度摄像头进行导航
+${Green_font_prefix}  7.${Font_color_suffix} 让LEO使用深度学习进行物体识别
+${Green_font_prefix}  8.${Font_color_suffix} 让LEO使用深度学习进行肢体识别
+${Green_font_prefix}  9.${Font_color_suffix} 让LEO进行颜色方块标定
+${Green_font_prefix}  10.${Font_color_suffix} 让LEO使用机械臂抓取物体
+
+————————————
+
+${Green_font_prefix}100.${Font_color_suffix} 问题反馈
+${Green_font_prefix}104.${Font_color_suffix} 文件传输
+	"
+	menu_status
+	check_dev
+	device_check
+	echo && stty erase ^? && read -p "请输入数字：" num
+	case "$num" in
+		0)
+		install_leo	
+		;;
+		1)
+		let_robot_go
+		;;
+		2)
+		people_follow
+		;;
+		3)
+		leo_build_map_2d
+		;;
+		4)
+		leo_build_map_3d
+		;;
+		5)
+		leo_navigation_2d
+		;;
+		6)
+		leo_navigation_3d
+		;;
+		7)
+		leo_yolo_object
+		;;
+		8)
+		leo_yolo_pose
+		;;
+		9)
+		hsv_cali
+		;;
+		10)
+		leo_grasp
+		;;
+		100)
+		tell_us
+		;;
+		104)
+		qrcode_transfer_files
+		;;	
+		*)
+		echo -e "${Error} 请输入正确的数字 "
+		;;
+	esac
+fi
+
+

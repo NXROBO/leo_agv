@@ -1,0 +1,8 @@
+# arcs_ros2_examples
+
+存放ros2相关demo示例
+
+# 构建本example功能包
+```shell
+colcon build --symlink-install --packages-select hello_moveit jupyter_python_tutorial motion_planning_api_tutorial motion_planning_pipeline_tutorial motion_planning_python_tutorial move_group_interface_tutorial planning_around_objects planning_scene_constraints planning_scene_ros_api_tutorial
+```

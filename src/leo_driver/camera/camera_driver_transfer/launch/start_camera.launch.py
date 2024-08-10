@@ -63,6 +63,8 @@ def generate_launch_description():
     # Create the launch configuration variables
     camera_type_tel = LaunchConfiguration('camera_type_tel')
 
+    serial_no = LaunchConfiguration('serial_no')   
+
     dp_rgist = LaunchConfiguration('dp_rgist')   
     start_camera_rviz = LaunchConfiguration('start_camera_rviz')   
     #remappings = [('/camera/depth/points', '/camera/depth_registered/points')]
@@ -88,13 +90,20 @@ def generate_launch_description():
         #choices=['d435', 'astra_pro'],
         description='camera type')
 
-
+    declare_serial_no = DeclareLaunchArgument(
+        'serial_no', 
+        default_value="''",  # 243522071475
+        # choices=["'243522071475'", "'135122073920'"],
+        description='d435 camera serial number')
 
         
     camera_type_launch = (camera_driver_transfer_dir, '/launch/', camera_type_tel, '.launch.py')
     camera_group = GroupAction([
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(camera_type_launch))
+            PythonLaunchDescriptionSource(camera_type_launch),
+            launch_arguments={
+                            "serial_no": serial_no,
+                            }.items()),
     ])
     # Specify the actions
     # camera_group = GroupAction([
@@ -124,6 +133,7 @@ def generate_launch_description():
     ld.add_action(declare_start_camera_rviz)
     ld.add_action(declare_dp_rgist)
     ld.add_action(declare_camera_type_tel)
+    ld.add_action(declare_serial_no)
     ld.add_action(camera_group)
 
     return ld

@@ -1,0 +1,263 @@
+# Copyright 2022 Clearpath Robotics, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#        Author: litian.zhuang   
+#        Email: <litian.zhuang@nxrobo.com>  
+#
+
+import os
+import launch
+
+from ament_index_python.packages import get_package_share_directory
+
+from launch import LaunchDescription
+from launch.actions import (DeclareLaunchArgument, GroupAction,
+                            IncludeLaunchDescription, SetEnvironmentVariable)
+from launch.conditions import IfCondition, LaunchConfigurationEquals, UnlessCondition
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node, PushRosNamespace
+import pyrealsense2 as rs
+
+# 获取D435 摄像头设备号
+
+num = []
+ctx = rs.context()
+if len(ctx.devices) > 0:
+    for d in ctx.devices:
+        # print(d.get_info(rs.camera_info.serial_number))
+        num.append(d.get_info(rs.camera_info.serial_number))
+else:
+    print("No Intel Device connected")
+
+if len(num) > 1:
+    start_camera = 'false'   # false
+else:
+    start_camera = 'true'
+    num = [" ", " "]
+
+# print(num, start_camera)
+
+
+def generate_launch_description():
+    # Get the launch directory
+    leo_base_dir = get_package_share_directory('leo_base')
+    leo_description_dir = get_package_share_directory('leo_description')
+    camera_driver_transfer_dir = get_package_share_directory('camera_driver_transfer')
+    realsense2_camera_dir = get_package_share_directory('realsense2_camera')  # ---------新增-------------
+    lidar_driver_transfer_dir = get_package_share_directory('lidar_driver_transfer')
+    teleop_twist_joy_dir = get_package_share_directory('teleop_twist_joy')
+
+    # Create the launch configuration variables
+    serial_port = LaunchConfiguration('serial_port')
+    enable_arm_tel = LaunchConfiguration('enable_arm_tel')
+    arm_type_tel = LaunchConfiguration('arm_type_tel')
+    start_base = LaunchConfiguration('start_base')
+    # start_camera = LaunchConfiguration('start_camera')
+    start_lidar = LaunchConfiguration('start_lidar')
+    camera_type_tel = LaunchConfiguration('camera_type_tel')
+    lidar_type_tel = LaunchConfiguration('lidar_type_tel')   
+    dp_rgist = LaunchConfiguration('dp_rgist')   
+    start_bringup_rviz = LaunchConfiguration('start_bringup_rviz')   
+    joy_config = LaunchConfiguration('joy_config')
+    config_filepath = LaunchConfiguration('config_filepath')
+    start_joy = LaunchConfiguration('start_joy')
+
+    # remappings = [('/tf', 'tf'),
+    #               ('/tf_static', 'tf_static')]
+
+    stdout_linebuf_envvar = SetEnvironmentVariable(
+        'RCUTILS_LOGGING_BUFFERED_STREAM', '1')
+
+    declare_serial_port = DeclareLaunchArgument(
+        'serial_port', 
+        default_value='/dev/LeoBase',
+        description='serial port name:/dev/LeoBase or /dev/ttyACM0')
+    declare_enable_arm_tel = DeclareLaunchArgument(
+        'enable_arm_tel', 
+        default_value='false',
+        choices=['true', 'false'],
+        description='Whether to run arm')
+    declare_arm_type_tel = DeclareLaunchArgument(
+        'arm_type_tel', 
+        default_value='uarm',
+        choices=['uarm', 'sagittarius_arm',"aubo_C3", 'aubo_ES3'],
+        description='arm name')
+    declare_start_base = DeclareLaunchArgument(
+        'start_base', 
+        default_value='true',
+        choices=['true', 'false'],
+        description='Whether to run base')
+    declare_start_camera = DeclareLaunchArgument(
+        'start_camera', 
+        default_value='true',
+        choices=['true', 'false'],
+        description='Whether to run camera')
+    declare_start_lidar = DeclareLaunchArgument(
+        'start_lidar', 
+        default_value='true',
+        choices=['true', 'false'],
+        description='Whether to run lidar')
+    declare_camera_type_tel = DeclareLaunchArgument(
+        'camera_type_tel', 
+        default_value='d435',
+        choices=['d435', 'astra_pro'],
+        description='camera type')
+    declare_lidar_type_tel = DeclareLaunchArgument(
+        'lidar_type_tel', 
+        default_value='ydlidar_g6',
+        choices=['ydlidar_g2', 'ydlidar_g6'],
+        description='lidar type')
+    declare_dp_rgist = DeclareLaunchArgument(
+        'dp_rgist', 
+        default_value='true',
+        choices=['true', 'false'],
+        description='Whether to run dp_rgist')
+    declare_start_bringup_rviz = DeclareLaunchArgument(
+        'start_bringup_rviz', 
+        default_value='true',
+        choices=['true', 'false'],
+        description='Whether to start_bringup_rviz')    
+    declare_joy_config = DeclareLaunchArgument(
+        'joy_config', 
+        default_value='xbox',
+        #choices=['xbox', 'ps2'],
+        description='joy type')
+    declare_config_filepath = DeclareLaunchArgument(
+        'config_filepath', 
+        default_value=[launch.substitutions.TextSubstitution(text=os.path.join(get_package_share_directory('leo_teleop'), 'config', '')),joy_config, launch.substitutions.TextSubstitution(text='.config.yaml')],
+        description='config file path')
+    declare_start_joy = DeclareLaunchArgument(
+        'start_joy', 
+        default_value='true',
+        choices=['true', 'false'],
+        description='whether to use joy')
+    
+    declare_base_type = DeclareLaunchArgument(   # -----------新增---------------
+        'base_type', 
+        default_value='diff',
+        choices=['diff', 'omni'],
+        description='Leo base type')
+    
+    rviz_config_dir = os.path.join(get_package_share_directory('leo_bringup'), 'rviz', 'urdf.rviz')
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output = 'screen',
+        arguments=['-d', rviz_config_dir],
+        condition=IfCondition(start_bringup_rviz),
+        parameters=[{'use_sim_time': False}]
+        )
+    # Specify the actions
+    bringup_cmd_group = GroupAction([
+        # PushRosNamespace(
+        #     condition=IfCondition(use_namespace),
+        #     namespace=namespace),
+
+        # Node(
+        #     condition=IfCondition(use_composition),
+        #     name='xxx',
+        #     package='yyy',
+        #     executable='zzz',
+        #     parameters=[configured_params, {'autostart': autostart}],
+        #     remappings=remappings,
+        #     output='screen'),
+            
+# -------------------------------------------------------------------新增 or 改动------------------------------------------------------------------------------------
+
+        # 差速底盘驱动
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(leo_base_dir, 'launch',
+                                                       'leo_base.launch.py')),
+            condition=LaunchConfigurationEquals('base_type', 'diff'),
+            launch_arguments={'serial_port': serial_port,}.items()),
+
+        # 麦轮底盘驱动
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(leo_base_dir, 'launch',
+                                                       'leo_base.launch.py')),
+            condition=LaunchConfigurationEquals('base_type', "omni"),
+            launch_arguments={'serial_port': serial_port,}.items()),
+
+        # 单相机
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(camera_driver_transfer_dir, 'launch',
+                                                    'start_camera.launch.py')),
+            condition=IfCondition(start_camera),
+            launch_arguments={'dp_rgist': dp_rgist,}.items()),
+        
+        # 双相机
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(camera_driver_transfer_dir, 'launch',
+                                                    'rs_multi_camera.launch.py')),
+            condition=UnlessCondition(start_camera),
+            launch_arguments={'serial_no1': "_"+num[1],
+                                            'serial_no2': "_"+num[0],
+                                            }.items()),
+# -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+        # IncludeLaunchDescription(
+        #     PythonLaunchDescriptionSource(os.path.join(camera_driver_transfer_dir, 'launch',
+        #                                                'start_camera.launch.py')),
+        #     condition=IfCondition(start_camera),
+        #     launch_arguments={'dp_rgist': dp_rgist,
+        #                                     'serial_no': "'135122073920'",
+        #                       }.items()),
+
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(lidar_driver_transfer_dir, 'launch',
+                                                       'start_lidar.launch.py')),
+            condition=IfCondition(start_lidar)),
+                              
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(teleop_twist_joy_dir, 'launch',
+                                                       'teleop-launch.py')),
+            condition=IfCondition(start_joy),                                                       
+            launch_arguments={'joy_config': joy_config,
+                              'config_filepath': config_filepath,}.items()),
+
+    ])
+
+
+    # Create the launch description and populate
+    ld = LaunchDescription()
+
+    # Set environment variables
+    ld.add_action(stdout_linebuf_envvar)
+
+    # Declare the launch options
+    ld.add_action(declare_serial_port)
+    ld.add_action(declare_enable_arm_tel)
+    ld.add_action(declare_arm_type_tel)
+    ld.add_action(declare_start_base)
+    ld.add_action(declare_start_lidar)
+    ld.add_action(declare_start_camera)
+    ld.add_action(declare_camera_type_tel)
+    ld.add_action(declare_lidar_type_tel)
+    ld.add_action(declare_dp_rgist)
+    ld.add_action(declare_start_bringup_rviz)
+    ld.add_action(declare_joy_config)
+    ld.add_action(declare_config_filepath)
+    ld.add_action(declare_start_joy)
+    ld.add_action(declare_base_type)   # -----------新增---------------
+
+
+    # Add the actions to launch all of the navigation nodes
+    ld.add_action(bringup_cmd_group)
+    ld.add_action(rviz_node)
+    
+
+    return ld

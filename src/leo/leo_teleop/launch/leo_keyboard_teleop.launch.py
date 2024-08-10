@@ -24,6 +24,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 import launch_ros.actions
 from launch_ros.actions import Node
+from launch.conditions import IfCondition, LaunchConfigurationEquals, UnlessCondition
+
 
 def generate_launch_description():
     # Get the launch directory
@@ -40,7 +42,14 @@ def generate_launch_description():
     camera_type_tel = LaunchConfiguration('camera_type_tel')
     lidar_type_tel = LaunchConfiguration('lidar_type_tel')   
     dp_rgist = LaunchConfiguration('dp_rgist')   
-    start_bringup_rviz = LaunchConfiguration('start_bringup_rviz')   
+    rviz_config = LaunchConfiguration('rviz_config')   
+    base_type = LaunchConfiguration('base_type')   # -----------新增---------------
+    robot_ip = LaunchConfiguration('robot_ip')   # -----------新增---------------
+    use_planning = LaunchConfiguration('use_planning')   # -----------新增---------------
+    namespace = LaunchConfiguration('namespace')    # -----------新增------------
+    tf_prefix = LaunchConfiguration("tf_prefix")     # -----------新增------------
+    rtu_device_name = LaunchConfiguration("rtu_device_name") # -----------新增---------------
+    
 
     declare_serial_port = DeclareLaunchArgument(
         'serial_port', 
@@ -54,7 +63,6 @@ def generate_launch_description():
     declare_arm_type_tel = DeclareLaunchArgument(
         'arm_type_tel', 
         default_value='uarm',
-        choices=['uarm', 'sagittarius_arm'],
         description='arm name')
     declare_start_base = DeclareLaunchArgument(
         'start_base', 
@@ -86,12 +94,44 @@ def generate_launch_description():
         default_value='true',
         choices=['true', 'false'],
         description='Whether to run dp_rgist')
-    declare_start_bringup_rviz = DeclareLaunchArgument(
-        'start_bringup_rviz', 
+    declare_rviz_config = DeclareLaunchArgument(# -----------修改---------------
+        'rviz_config', 
+        default_value='leo_base.rviz',
+        description='rviz_config')    
+    declare_base_type = DeclareLaunchArgument(   # -----------新增---------------
+        'base_type', 
+        default_value='diff',
+        choices=['diff', 'omni'],
+        description='Leo base type')
+    declare_robot_ip = DeclareLaunchArgument(   # -----------新增---------------
+        'robot_ip', 
+        default_value='192.168.47.101',
+        description='choose Aubo IP')
+    declare_namespace = DeclareLaunchArgument( # -----------新增---------------
+            'namespace',
+            default_value='/',
+            description='Namespace of launched nodes, useful for multi-robot setup. \
+                         If changed than also the namespace in the controllers \
+                         configuration needs to be updated. Expected format "<ns>/".',
+    )
+    declare_tf_prefix =DeclareLaunchArgument(# -----------新增---------------
+            "tf_prefix",
+            default_value='',
+            description="Prefix of the joint names, useful for \
+        multi-robot setup. If changed than also joint names in the controllers' configuration \
+        have to be updated.",
+        )
+    declare_rtu_device_name = DeclareLaunchArgument(   # -----------新增---------------
+        'rtu_device_name', 
+        default_value='/dev/ttyS7,115200,N,8,0 ',
+        description='Modbus RTU device info')
+    declare_use_planning = DeclareLaunchArgument(   # -----------新增---------------
+        'use_planning', 
         default_value='true',
-        choices=['true', 'false'],
-        description='Whether to start_bringup_rviz')    
+        description='whether to use planing')
 
+    
+    
    
     # Specify the actions
     camera_group = GroupAction([
@@ -107,7 +147,11 @@ def generate_launch_description():
                               'camera_type_tel' : camera_type_tel,
                               'lidar_type_tel': lidar_type_tel,
 							  'dp_rgist': dp_rgist,
-                              'start_bringup_rviz' : start_bringup_rviz,}.items()),
+                              'base_type': base_type,   # -----------新增---------------
+                              'robot_ip': robot_ip,     # -----------新增---------------
+                              'tf_prefix':tf_prefix,    # -----------新增---------------
+                              'rviz_config' : rviz_config,   # -----------新增---------------                    
+                              }.items()),
     ])
     
     leo_teleop_node = launch_ros.actions.Node(
@@ -116,6 +160,18 @@ def generate_launch_description():
         output='screen',
         emulate_tty=True,
         )
+
+    rviz_config_dir = os.path.join(get_package_share_directory('leo_bringup'), 'rviz', 'urdf.rviz')
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output = 'screen',
+        arguments=['-d', rviz_config_dir],
+        condition=UnlessCondition(enable_arm_tel),
+        parameters=[{'use_sim_time': False}]
+        )
+
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -128,7 +184,17 @@ def generate_launch_description():
     ld.add_action(declare_camera_type_tel)
     ld.add_action(declare_lidar_type_tel)
     ld.add_action(declare_dp_rgist)
-    ld.add_action(declare_start_bringup_rviz)
+    ld.add_action(declare_rviz_config) # -----------修改---------------
+    ld.add_action(declare_base_type)   # -----------新增---------------
+    ld.add_action(declare_robot_ip)   # -----------新增---------------
+    ld.add_action(declare_namespace)     # -----------新增---------------
+    ld.add_action(declare_tf_prefix) # -----------新增---------------
+    ld.add_action(declare_rtu_device_name)   # -----------新增---------------
+    ld.add_action(declare_use_planning)   # -----------新增---------------
+    ld.add_action(rviz_node)# -----------新增---------------
+    
+
     ld.add_action(camera_group)
     ld.add_action(leo_teleop_node)
+    
     return ld

@@ -22,11 +22,13 @@
 #include "leo_base/msg/leo_base_dock.hpp"
 #include "leo_base/msg/gyro_message.hpp"
 #include "leo_base/msg/leo_base_odom.hpp"
+#include "leo_base/srv/leo_base_control.hpp"
+
 #include "leo_base/kfilter.hpp"
 #include "leo_base/mylock.hpp"
 
 #define NODE_VERSION 0.01
-#define LEOBASETIMEOUT (1000 * 1e3) //超过1s
+#define LEOBASETIMEOUT (1000 * 1e3) // ����1s
 #define COUNT_TIMES 20
 using namespace std::chrono_literals;
 
@@ -54,6 +56,9 @@ namespace NxLeoBase
     void process_base_receive_thread();
     void checkSerialGoon();
     void publish_odom();
+    void handle_base_control_cmd(const std::shared_ptr<leo_base::srv::LeoBaseControl::Request> request,
+                                                std::shared_ptr<leo_base::srv::LeoBaseControl::Response> response);
+
   private:
     std::string base_frame_id;
     std::string odom_frame_id;
@@ -78,9 +83,11 @@ namespace NxLeoBase
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
     std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
+    rclcpp::Service<leo_base::srv::LeoBaseControl>::SharedPtr service_lbc;
     double last_x, last_y, last_yaw;
     double vel_x, vel_y, vel_yaw;
     double dt;
+    unsigned char ret_short_cuts;
     int idx;
     unsigned int countSerial, lastCountSerial;
     double fb_time[COUNT_TIMES], fb_dist[COUNT_TIMES], fb_dist_x[COUNT_TIMES], odom_x[COUNT_TIMES], odom_y[COUNT_TIMES],
@@ -89,6 +96,7 @@ namespace NxLeoBase
     NxLeoBase::KFilter odom_x_kfilter, odom_y_kfilter;
     double left_wheel_position, right_wheel_position;
     std::shared_ptr<std::thread> base_receive_thread_;
+    char driver_board_version[100];
   };
 
 }

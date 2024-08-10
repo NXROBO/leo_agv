@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>moveit_resources_aubo_C3_description</name>
+  <description>aubo_C3 Resources used for MoveIt</description>
+  <author email="zhd172@gmail.com">ZhangDuo</author>
+  <maintainer email="zhd172@gmail.com">ZhangDuo</maintainer>
+  <version>0.0.0</version>
+  <license>BSD</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+      <build_type>ament_cmake</build_type>
+  </export>
+</package>

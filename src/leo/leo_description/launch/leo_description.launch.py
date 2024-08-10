@@ -50,6 +50,7 @@ class DeclareSparkRobotDescriptionLaunchArgument(DeclareLaunchArgument):
             'arm_type_tel:=', LaunchConfiguration('arm_type_tel'), ' ',
             'camera_type_tel:=', LaunchConfiguration('camera_type_tel'), ' ',
             'lidar_type_tel:=', LaunchConfiguration('lidar_type_tel'), ' ',
+            'base_type_tel:=', LaunchConfiguration('base_type_tel'), ' ',
         ]),
         **kwargs
     ) -> None:
@@ -177,6 +178,13 @@ def generate_launch_description():
             'lidar_type_tel',
             default_value='ydlidar_g6',
             description='model type of the leo lidar such as `ydlidar_g6` or `ydlidar_g2`.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'base_type_tel',
+            default_value='leo_base_normal',
+            description='choose leo base type urdf',
         )
     )
 

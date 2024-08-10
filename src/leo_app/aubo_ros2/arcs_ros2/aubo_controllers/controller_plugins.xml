@@ -1,0 +1,17 @@
+<library path="aubo_controllers">
+  <!-- <class name="aubo_controllers/SpeedScalingStateBroadcaster" type="aubo_controllers::SpeedScalingStateBroadcaster" base_class_type="controller_interface::ControllerInterface">
+    <description>
+      This controller publishes the readings of all available speed scaling factors.
+    </description>
+  </class>
+  <class name="aubo_controllers/ScaledJointTrajectoryController" type="aubo_controllers::ScaledJointTrajectoryController" base_class_type="controller_interface::ControllerInterface">
+    <description>
+      Scaled position-based joint trajectory controller.
+    </description>
+  </class> -->
+  <class name="aubo_controllers/GPIOController" type="aubo_controllers::GPIOController" base_class_type="controller_interface::ControllerInterface">
+    <description>
+      This controller publishes the Tool IO.
+    </description>
+  </class>
+</library>

@@ -34,15 +34,16 @@ configurable_parameters = [{'name': 'camera_name',                  'default': '
                            {'name': 'log_level',                    'default': 'info', 'description': 'debug log level [DEBUG|INFO|WARN|ERROR|FATAL]'},
                            {'name': 'output',                       'default': 'screen', 'description': 'pipe node output [screen|log]'},
                            {'name': 'enable_color',                 'default': 'true', 'description': 'enable color stream'},
-                           {'name': 'rgb_camera.profile',           'default': '0,0,0', 'description': 'color image width'},
+                           {'name': 'rgb_camera.color_profile',     'default': '0,0,0', 'description': 'color stream profile'},
                            {'name': 'rgb_camera.color_format',      'default': 'RGB8', 'description': 'color stream format'},
                            {'name': 'rgb_camera.enable_auto_exposure', 'default': 'true', 'description': 'enable/disable auto exposure for color image'},
                            {'name': 'enable_depth',                 'default': 'true', 'description': 'enable depth stream'},
                            {'name': 'enable_infra',                 'default': 'false', 'description': 'enable infra0 stream'},
                            {'name': 'enable_infra1',                'default': 'false', 'description': 'enable infra1 stream'},
                            {'name': 'enable_infra2',                'default': 'false', 'description': 'enable infra2 stream'},
-                           {'name': 'depth_module.profile',         'default': '0,0,0', 'description': 'depth module profile'},
+                           {'name': 'depth_module.depth_profile',   'default': '0,0,0', 'description': 'depth stream profile'},
                            {'name': 'depth_module.depth_format',    'default': 'Z16', 'description': 'depth stream format'},
+                           {'name': 'depth_module.infra_profile',   'default': '0,0,0', 'description': 'infra streams (0/1/2) profile'},
                            {'name': 'depth_module.infra_format',    'default': 'RGB8', 'description': 'infra0 stream format'},
                            {'name': 'depth_module.infra1_format',   'default': 'Y8', 'description': 'infra1 stream format'},
                            {'name': 'depth_module.infra2_format',   'default': 'Y8', 'description': 'infra2 stream format'},
@@ -67,12 +68,12 @@ configurable_parameters = [{'name': 'camera_name',                  'default': '
                            {'name': 'diagnostics_period',           'default': '0.0', 'description': 'Rate of publishing diagnostics. 0=Disabled'},
                            {'name': 'publish_tf',                   'default': 'true', 'description': '[bool] enable/disable publishing static & dynamic TF'},
                            {'name': 'tf_publish_rate',              'default': '0.0', 'description': '[double] rate in Hz for publishing dynamic TF'},
-                           {'name': 'pointcloud.enable',            'default': 'false', 'description': ''},
+                           {'name': 'pointcloud.enable',            'default': 'true', 'description': ''},
                            {'name': 'pointcloud.stream_filter',     'default': '2', 'description': 'texture stream for pointcloud'},
                            {'name': 'pointcloud.stream_index_filter','default': '0', 'description': 'texture stream index for pointcloud'},
                            {'name': 'pointcloud.ordered_pc',        'default': 'false', 'description': ''},
                            {'name': 'pointcloud.allow_no_texture_points', 'default': 'false', 'description': "''"},
-                           {'name': 'align_depth.enable',           'default': 'false', 'description': 'enable align depth filter'},
+                           {'name': 'align_depth.enable',           'default': 'true', 'description': 'enable align depth filter'},
                            {'name': 'colorizer.enable',             'default': 'false', 'description': 'enable colorizer filter'},
                            {'name': 'decimation_filter.enable',     'default': 'false', 'description': 'enable_decimation_filter'},
                            {'name': 'spatial_filter.enable',        'default': 'false', 'description': 'enable_spatial_filter'},
@@ -82,6 +83,7 @@ configurable_parameters = [{'name': 'camera_name',                  'default': '
                            {'name': 'hdr_merge.enable',             'default': 'false', 'description': 'hdr_merge filter enablement flag'},
                            {'name': 'wait_for_device_timeout',      'default': '-1.', 'description': 'Timeout for waiting for device to connect (Seconds)'},
                            {'name': 'reconnect_timeout',            'default': '6.', 'description': 'Timeout(seconds) between consequtive reconnection attempts'},
+                           
                           ]
 
 def declare_configurable_parameters(parameters):
@@ -97,6 +99,14 @@ def yaml_to_dict(path_to_yaml):
 def launch_setup(context, params, param_name_suffix=''):
     _config_file = LaunchConfiguration('config_file' + param_name_suffix).perform(context)
     params_from_file = {} if _config_file == "''" else yaml_to_dict(_config_file)
+
+    _output = LaunchConfiguration('output' + param_name_suffix)
+    if(os.getenv('ROS_DISTRO') == 'foxy'):
+        # Foxy doesn't support output as substitution object (LaunchConfiguration object)
+        # but supports it as string, so we fetch the string from this substitution object
+        # see related PR that was merged for humble, iron, rolling: https://github.com/ros2/launch/pull/577
+        _output = context.perform_substitution(_output)
+
     return [
         launch_ros.actions.Node(
             package='realsense2_camera',
@@ -104,7 +114,7 @@ def launch_setup(context, params, param_name_suffix=''):
             name=LaunchConfiguration('camera_name' + param_name_suffix),
             executable='realsense2_camera_node',
             parameters=[params, params_from_file],
-            output=LaunchConfiguration('output' + param_name_suffix),
+            output=_output,
             arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level' + param_name_suffix)],
             emulate_tty=True,
             )

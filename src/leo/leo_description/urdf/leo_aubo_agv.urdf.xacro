@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+
+<robot name="aubo" xmlns:xacro="http://ros.org/wiki/xacro">
+	<xacro:arg name="robot_ip" default="127.0.0.1" />
+	
+	<xacro:arg name="arm_type_tel"	default="aubo_C3"/>
+	<xacro:property name="robot_arm_type"	value="$(arg arm_type_tel)"/>
+
+  	<xacro:arg name="camera_type_tel"	default="d435"/>
+
+	<xacro:property name="camera"	value="$(arg camera_type_tel)"/>
+
+  	<xacro:arg name="lidar_type_tel"	default="ydlidar_g6"/>
+
+	<xacro:property name="lidar"	value="$(arg lidar_type_tel)"/>
+
+  	<xacro:include filename="$(find leo_description)/urdf/base/leo_aubo_base.urdf"/>  	
+  		
+	<xacro:if value="${lidar == 'ydlidar_g2'}">
+		<xacro:include filename="$(find ydlidar_ros2_driver)/urdf/ydlidar.urdf" />
+	</xacro:if>
+
+	<xacro:if value="${lidar == 'ydlidar_g6'}">
+		<xacro:include filename="$(find ydlidar_ros2_driver)/urdf/ydlidar.urdf" />
+	</xacro:if>
+
+	<xacro:if value="${camera == 'astrapro' or camera == 'astra'}">
+		<xacro:include filename="$(find leo_description)/urdf/sensors/leo_$(arg camera_type_tel).urdf"/>
+	</xacro:if>
+
+	<xacro:if value="${camera == 'd435'}">
+		<!-- <xacro:include filename="$(find realsense2_description)/urdf/leo_d435_camera.urdf.xacro"/> -->
+		<xacro:include filename="$(find realsense2_description)/urdf/leo_arm_d435_camera.urdf.xacro"/>
+	</xacro:if>
+
+  <!-- arm link -->
+	<!--   io communication related parameters-->
+	<xacro:arg name="rtu_device_name" default="/dev/ttyUSB0,115200,N,8,1" />
+	<!-- Simulation parameters -->
+   	<xacro:arg name="use_fake_hardware" default="false" />
+    <xacro:arg name="tf_prefix" default="" />
+    <xacro:include filename="$(find aubo_description)/urdf/${robot_arm_type}.xacro"/>
+    <xacro:aubo_robot name="aubo"
+      parent="base_link"
+	  robot_ip="$(arg robot_ip)"
+      tf_prefix="$(arg tf_prefix)"
+      aubo_type="${robot_arm_type}"
+	  use_fake_hardware="$(arg use_fake_hardware)"
+	  rtu_device_name="$(arg rtu_device_name)"
+      >
+      <!-- position robot in the world -->
+      <origin xyz="0.17 0.0 0.25" rpy="0.0 0.0 1.5708" />
+    </xacro:aubo_robot>
+
+</robot>

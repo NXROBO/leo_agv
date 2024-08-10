@@ -23,8 +23,10 @@ namespace NxLeoBase
 {
 
     LeoSerial::LeoSerial(std::string dev_name, uint32_t baudrate = 1000000) : serial_name_(dev_name),
-                                                                              baudrate_(baudrate)
+                                                                                 baudrate_(baudrate)
     {
+
+
     }
 
     LeoSerial::~LeoSerial()
@@ -50,8 +52,8 @@ namespace NxLeoBase
 
         struct termios options;
         bzero(&options, sizeof(options));
-        cfmakeraw(&options); // ÉèÖÃÎªRawÄ£Ê½
-        // 设置串口输入波特率和输出波特率
+        cfmakeraw(&options); //ÉèÖÃÎªRawÄ£Ê½
+        //设置串口输入波特率和输出波特率
         for (i = 0; i < sizeof(speed_arr) / sizeof(int); i++)
         {
             if (baudrate_ == name_arr[i])
@@ -68,21 +70,21 @@ namespace NxLeoBase
             close(fd_);
             return -1;
         }
-        options.c_cflag |= CLOCAL; // 保证程序不会占用串口
+        options.c_cflag |= CLOCAL; //保证程序不会占用串口
         //  options.c_cflag &= ~CLOCAL;
-        options.c_cflag |= CREAD;    // 能够从串口读取输入数据
-        options.c_cflag &= ~CRTSCTS; // 不使用流控制
-        options.c_cflag &= ~CSIZE;   // 先把数据位清零
+        options.c_cflag |= CREAD;    //能够从串口读取输入数据
+        options.c_cflag &= ~CRTSCTS; //不使用流控制
+        options.c_cflag &= ~CSIZE;   //先把数据位清零
         options.c_cflag |= CS8;      // 8位数据位
-        options.c_cflag &= ~PARENB;  // 无奇偶校验
+        options.c_cflag &= ~PARENB;  //无奇偶校验
         options.c_cflag &= ~CSTOPB;  // 1个停止位
-        options.c_oflag &= ~OPOST;   // 置输出标志：不执行输出处理
-        options.c_cc[VMIN] = 0;      // 如果有数据可用，则read最多返回所要求的字节数，如果无数据可用，则read立即返回0。
-        options.c_cc[VTIME] = 0;     // 如果有数据可用，则read最多返回所要求的字节数，如果无数据可用，则read立即返回0。
+        options.c_oflag &= ~OPOST;   //置输出标志：不执行输出处理
+        options.c_cc[VMIN] = 0;      //如果有数据可用，则read最多返回所要求的字节数，如果无数据可用，则read立即返回0。
+        options.c_cc[VTIME] = 0;     //如果有数据可用，则read最多返回所要求的字节数，如果无数据可用，则read立即返回0。
 
         tcflush(fd_, TCIFLUSH); // 清除正收到的数据，且不会读取出来。
 
-        // 设置属性
+        //设置属性
 
         if (tcsetattr(fd_, TCSANOW, &options) != 0)
         {
@@ -106,18 +108,18 @@ namespace NxLeoBase
 
     void LeoSerial::hex_printf(unsigned char *buf, int len)
     {
-#if 1
+        #if 1
         int i;
         for (i = 0; i < len; i++)
         {
             printf("%02x ", buf[i]);
         }
         printf("\n");
-#endif
+        #endif
     }
 
-    int LeoSerial::WriteBuffer(uint8_t *buf, uint16_t length)
-    {
+    int LeoSerial::WriteBuffer(uint8_t *buf, uint16_t length) 
+    { 
         return write(fd_, buf, length);
     }
 
@@ -125,7 +127,7 @@ namespace NxLeoBase
     {
         int fs_sel;
         fd_set fs_read;
-
+   
         static int first_bit = 1;
         struct timeval time;
         if (fd_ == -1)

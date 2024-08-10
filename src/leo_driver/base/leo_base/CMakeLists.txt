@@ -35,6 +35,7 @@ set(msg_files
   "msg/LeoBaseOdom.msg"
   "msg/LeoBaseDock.msg"
   "msg/LeoBaseSensor.msg"
+  "srv/LeoBaseControl.srv"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}

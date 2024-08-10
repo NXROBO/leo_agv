@@ -121,7 +121,7 @@ public:
 
     cmdvel_pub = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
     cloud_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/camera/depth/color/points", 1, std::bind(&NxFollowerNode::pointCloudCb, this, std::placeholders::_1));
+        "/camera/camera/depth/color/points", 1, std::bind(&NxFollowerNode::pointCloudCb, this, std::placeholders::_1));
   }
   virtual ~NxFollowerNode()
   {

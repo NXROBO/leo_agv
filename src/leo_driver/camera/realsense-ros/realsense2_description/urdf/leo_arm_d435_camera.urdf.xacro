@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot name="realsense2_camera" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:arg name="use_nominal_extrinsics" default="true"/>
+  <xacro:arg name="add_plug" default="false" />
+  <xacro:arg name="use_mesh" default="true" />
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+  
+
+  <!-- <xacro:sensor_d435 parent="wrist3_Link" use_nominal_extrinsics="$(arg use_nominal_extrinsics)" add_plug="$(arg add_plug)" use_mesh="$(arg use_mesh)">
+    <origin xyz="-0.02 0.075 0.003" rpy="0 -3.14 -1.57"/>
+  </xacro:sensor_d435> -->
+
+   <xacro:sensor_d435 parent="wrist3_Link" use_nominal_extrinsics="$(arg use_nominal_extrinsics)" add_plug="$(arg add_plug)" use_mesh="$(arg use_mesh)">
+    <origin xyz="0.00499759 0.05569069 0.01627599" rpy="1.82815203 -1.56586425  2.91023756"/>
+  </xacro:sensor_d435>
+
+</robot>
