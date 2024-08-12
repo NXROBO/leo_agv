@@ -806,6 +806,39 @@ menu_status(){
 	echo -e "${Error} 未检测到ROS版本，请先安装ROS！可以选择102直接安装。" 
 }
 
+
+leo_aging_test(){
+	
+	echo -e ""
+	echo -e "${Tip} --------进行左右旋转5分钟或老化测试--------" 
+	echo -e "${Info}请选择：
+	  ${Green_font_prefix}1.${Font_color_suffix} 左右旋转5分钟
+	  ${Green_font_prefix}2.${Font_color_suffix} 老化测试
+	  ${Green_font_prefix}3.${Font_color_suffix} 退出请输入：Ctrl + c" 
+	echo && stty erase ^? && read -p "请输入数字 [1-2]：" cnum
+	case "$cnum" in
+		1)
+		echo -e "${Info}" 
+		echo -e "${Info} 进行5分钟自转测试"
+		echo -e "${Info}"
+		echo -e "${Info}    退出请输入：Ctrl + c    " 
+		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+		source /home/leo/leo_agv/install/setup.bash
+		print_command "ros2 launch leo_test leo_test_five_minute.launch.py"
+		ros2 launch leo_test leo_test_five_minute.launch.py 
+		;;
+		2)
+		echo -e "${Info}" 
+		echo -e "${Info} 进行老化测试"
+		echo -e "${Info}"
+		echo -e "${Info}    退出请输入：Ctrl + c    " 
+		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
+		source /home/leo/leo_agv/install/setup.bash
+		print_command "ros2 launch leo_test leo_test_aging.launch.py "
+		ros2 launch leo_test leo_test_aging.launch.py 
+	esac
+}
+
 tell_us(){
 	echo -e ""
 	echo -e "${Tip} --------------分隔线----------------" 
@@ -879,6 +912,9 @@ ${Green_font_prefix}104.${Font_color_suffix} 文件传输
 		8)
 		leo_yolo_pose
 		;;
+		99)
+		leo_aging_test
+		;;
 		100)
 		tell_us
 		;;
@@ -949,6 +985,9 @@ ${Green_font_prefix}104.${Font_color_suffix} 文件传输
 		;;
 		10)
 		leo_grasp
+		;;
+		99)
+		leo_aging_test
 		;;
 		100)
 		tell_us

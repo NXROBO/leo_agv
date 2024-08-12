@@ -26,6 +26,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 import launch_ros.actions
 from launch_ros.actions import Node
+from launch.conditions import IfCondition, LaunchConfigurationEquals, UnlessCondition
 
 def generate_launch_description():
     # Get the launch directory
@@ -181,6 +182,24 @@ def generate_launch_description():
         executable='camera_pose',  
         output='screen',
         )
+    
+    leo_teleop_node = launch_ros.actions.Node(
+        package='leo_teleop',
+        executable='keyboard_control.sh',  
+        output='screen',
+        emulate_tty=True,
+        )
+        
+    rviz_config_dir = os.path.join(get_package_share_directory('leo_bringup'), 'rviz', 'urdf.rviz')
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output = 'screen',
+        arguments=['-d', rviz_config_dir],
+        condition=UnlessCondition(enable_arm_tel),
+        parameters=[{'use_sim_time': False}]
+        )
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -207,4 +226,6 @@ def generate_launch_description():
 
     ld.add_action(letitgo_group)
     ld.add_action(yolov8_pose_node)
+    ld.add_action(leo_teleop_node)
+    ld.add_action(rviz_node)
     return ld

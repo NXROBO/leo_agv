@@ -34,17 +34,28 @@ set(LIB_DEPENDENCIES
 
 )
 
-add_executable(leo_test_motion src/leo_test_motion.cpp)
-ament_target_dependencies(leo_test_motion ${LIB_DEPENDENCIES})
+add_executable(leo_aging_test src/leo_aging_test.cpp)
+ament_target_dependencies(leo_aging_test ${LIB_DEPENDENCIES})
 
-target_include_directories(leo_test_motion PUBLIC
+target_include_directories(leo_aging_test PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
 
-install(TARGETS leo_test_motion
+install(TARGETS leo_aging_test
   DESTINATION lib/${PROJECT_NAME})
 
+
+add_executable(leo_test_five_minute src/leo_test_five_minute.cpp)
+ament_target_dependencies(leo_test_five_minute ${LIB_DEPENDENCIES})
+
+target_include_directories(leo_test_five_minute PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
+
+install(TARGETS leo_test_five_minute
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
