@@ -20,7 +20,7 @@ class YoloDetection(Node):
 # 初始化函数，包括加载模型和创建订阅者
     def __init__(self):
         # 加载模型
-        model_path = os.path.join('/home/nxrobo/leo_agv_class/procedure/leo_agv/src/leo_app/leo_yolov8/yolov8n.pt')  # 构造模型文件的绝对路径
+        model_path = os.path.join('/home/leo/arm_ws/install/leo_yolov8/share/leo_yolov8/config/yolov8n.pt')  # 构造模型文件的绝对路径
         self.model = YOLO(model_path)
         
         # 创建订阅者

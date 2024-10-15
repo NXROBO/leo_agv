@@ -115,7 +115,7 @@ class ImgShow(Node):
             roi_x,roi_y = 0,0
             sum_h,sum_s,sum_v = 0,0,0
             roi_num = 0 
-            thresh = 10
+            thresh = 20
             
             # 打印鼠标拖拽的停止值
             # print("检测到鼠标松开的位置为", y,x)
@@ -180,7 +180,7 @@ class ImgShow(Node):
     def save_hsv_values_to_file(self):
         with open(self.hsv_file_path, 'w') as file:
             json.dump(self.hsv_dict, file)
-        print("HSV values saved to hsv_values.txt")
+        print("HSV values saved to leo_agv/install/leo_grasp/share/leo_grasp/param/hsv_values.txt")
                 
 
 # 定义主函数

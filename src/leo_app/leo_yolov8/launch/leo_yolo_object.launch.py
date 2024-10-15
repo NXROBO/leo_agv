@@ -53,6 +53,8 @@ def generate_launch_description():
     namespace = LaunchConfiguration('namespace')    # -----------新增------------
     tf_prefix = LaunchConfiguration("tf_prefix")     # -----------新增------------
     rtu_device_name = LaunchConfiguration("rtu_device_name") # -----------新增---------------
+    rgb_topic_name = LaunchConfiguration('rgb_topic_name')   # -----------新增---------------
+    depth_topic_name = LaunchConfiguration('depth_topic_name')   # -----------新增---------------
 
 
     declare_serial_port = DeclareLaunchArgument(
@@ -153,6 +155,16 @@ def generate_launch_description():
         'use_planning', 
         default_value='true',
         description='whether to use planing')
+    declare_rgb_topic_name = DeclareLaunchArgument(   # -----------新增---------------
+        'rgb_topic_name', 
+        default_value='/camera/camera/color/image_raw',
+        description='choose rgb_topic_name')
+    declare_depth_topic_name = DeclareLaunchArgument(   # -----------新增---------------
+        'depth_topic_name', 
+        default_value='/camera/camera/aligned_depth_to_color/image_raw',
+        description='choose depth_topic_name')
+
+
 
     # Specify the actions
     letitgo_group = GroupAction([
@@ -188,6 +200,8 @@ def generate_launch_description():
         package='leo_yolov8',
         executable='camera_object',  
         output='screen',
+        parameters=[{'rgb_topic_name': rgb_topic_name,
+                    'depth_topic_name': depth_topic_name}]
         )
 
     leo_teleop_node = launch_ros.actions.Node(
@@ -229,6 +243,8 @@ def generate_launch_description():
     ld.add_action(declare_tf_prefix) # -----------新增---------------
     ld.add_action(declare_rtu_device_name)   # -----------新增---------------
     ld.add_action(declare_use_planning)   # -----------新增---------------
+    ld.add_action(declare_rgb_topic_name)   # -----------新增---------------
+    ld.add_action(declare_depth_topic_name)   # -----------新增---------------
 
     ld.add_action(letitgo_group)
     ld.add_action(yolov8_pose_node)

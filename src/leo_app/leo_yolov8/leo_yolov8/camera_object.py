@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 import os
 import sys
 import rclpy
@@ -23,16 +24,22 @@ from ultralytics import YOLO
 class YoloDetection(Node):
 # 初始化函数，包括加载模型和创建订阅者
     def __init__(self):
+        super().__init__('yolo_detection_node')
         # 加载模型
-        model_path = os.path.join('/home/leo/leo_agv/src/leo_app/leo_yolov8/yolov8n.pt')  # 构造模型文件的绝对路径
-        self.model = YOLO(model_path)
-        
+        pt_path = sys.path[0]
+        self.model = YOLO(pt_path + '/config/yolov8n-seg.pt')
+        # model_path = os.path.join('/home/leo/leo_agv/src/leo_app/leo_yolov8/yolov8n.pt')  # 构造模型文件的绝对路径
+        # self.model = YOLO(model_path)
+
+        rgb_topic = self.declare_parameter("rgb_topic_name").get_parameter_value().string_value
+        depth_topic = self.declare_parameter("depth_topic_name").get_parameter_value().string_value
+
         # 创建订阅者
         super().__init__('Yolo')
         # 创建日志记录器
         self.logger = get_logger("yolov8")
         # rgb图像话题
-        self.image_sub = self.create_subscription(Image, '/camera/camera/color/image_raw', self.detect, 10)
+        self.image_sub = self.create_subscription(Image, rgb_topic, self.detect, 10)
         time.sleep(5)
         self.camera_reference_frame = "camera_link" # 摄像头坐标系
 
@@ -43,7 +50,7 @@ class YoloDetection(Node):
 
         # 深度图像话题
         self.depth_sub = self.create_subscription(
-            Image, "/camera/camera/aligned_depth_to_color/image_raw", self.camera_depth_cb, 10
+            Image, depth_topic, self.camera_depth_cb, 10
         )
         
         self.bridge = CvBridge()

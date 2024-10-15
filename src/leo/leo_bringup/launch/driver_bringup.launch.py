@@ -54,6 +54,14 @@ if second_string != "None":
     start_device = 'leo_base'
 else:
     start_device = 'leo_base_normal'
+    
+leo_bringup_dir = get_package_share_directory('leo_bringup')
+leo_bringup_dir = os.path.join(*leo_bringup_dir.split(os.sep)[:4])
+with open('/'+leo_bringup_dir+'/doc/camera.txt', 'r') as file:
+    lines = file.readlines()
+servo1 = lines[1].strip()  
+servo2 = lines[2].strip()
+
 
 def generate_launch_description():
     # --------------------Get the launch directory--------------------
@@ -253,8 +261,8 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(os.path.join(camera_driver_transfer_dir, 'launch',
                                                     'rs_multi_camera.launch.py')),
             condition=UnlessCondition(start_camera),
-            launch_arguments={'serial_no1': "_"+num[1],
-                                            'serial_no2': "_"+num[0],
+            launch_arguments={'serial_no1': "_"+servo2,
+                                            'serial_no2': "_"+servo1,
                                             }.items()),
                     
 # -------------------------------------------------------------------------------------------------------------------------------------------------------

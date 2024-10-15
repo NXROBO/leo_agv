@@ -674,8 +674,12 @@ leo_grasp(){
 		;;
 	
 		2)
-		echo  && stty erase ^? && read -p "******     请输入放置台的高度，单位为厘米，默认为25.5cm，按回车键（Enter）开始：" table_h 
+		echo -e "\033[32m" && stty erase ^? && read -p "******     请输入放置台的高度，单位为厘米，默认为25.5cm，按回车键（Enter）开始：" table_h 
+		echo -e "\033"
 		# 将输入的高度转换为米
+		if [ -z "$table_h" ]; then
+			table_h="25.5"
+		fi
 		table_h=$(echo "($table_h-4) * 0.01" | bc)
 		print_command "ros2 launch leo_grasp start_leo_grasp.launch.py table_h:=${table_h}"
 		ros2 launch leo_grasp start_leo_grasp.launch.py table_h:="'$table_h'"

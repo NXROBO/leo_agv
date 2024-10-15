@@ -24,7 +24,7 @@ class YoloDetection(Node):
 # 初始化函数，包括加载模型和创建订阅者
     def __init__(self):
         # 加载模型
-        model_path = os.path.join('/home/leo/leo_agv/src/leo_app/leo_yolov8/yolov8n.pt')  # 构造模型文件的绝对路径
+        model_path = os.path.join('/home/leo/arm_ws/install/leo_yolov8/share/leo_yolov8/config/yolov8n.pt')  # 构造模型文件的绝对路径
         self.model = YOLO(model_path)
         
         # 创建订阅者
@@ -204,14 +204,14 @@ class YoloDetection(Node):
                 cube_tf.header.stamp = self.get_clock().now().to_msg()
                 cube_tf.header.frame_id = self.camera_reference_frame
                 cube_tf.child_frame_id = "object_"+str(ip)
-                cube_tf.transform.translation.x = -float(point_y)  # 将Y轴坐标赋值给X轴
+                cube_tf.transform.translation.x = float(point_z)  # 将Y轴坐标赋值给X轴
                 cube_tf.transform.translation.y = -float(point_x)  # 将X轴坐标赋值给Y轴
-                cube_tf.transform.translation.z = -float(point_z)  # 将Z轴坐标赋值给Z轴
-                # ori = tf_transformations.quaternion_from_euler(3.14, 0, -theta)  # 计算姿态的四元数
-                cube_tf.transform.rotation.x = 1.0
-                cube_tf.transform.rotation.y = 0.0
-                cube_tf.transform.rotation.z = 0.0
-                cube_tf.transform.rotation.w = 0.0
+                cube_tf.transform.translation.z = -float(point_y)  # 将Z轴坐标赋值给Z轴
+                ori = tf_transformations.quaternion_from_euler(3.14, -1.57, 0)  # 计算姿态的四元数
+                cube_tf.transform.rotation.x = ori[0]
+                cube_tf.transform.rotation.y = ori[1]
+                cube_tf.transform.rotation.z = ori[2]
+                cube_tf.transform.rotation.w = ori[3]
                 msg = String()
                 msg.data = str(ip)
                 self.obj_pub.publish(msg)

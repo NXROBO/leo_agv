@@ -27,9 +27,9 @@ class Detector(Node):
 
         # self.bgr = [225, 105, 65]  # low blue1
         # self.bgr = [201, 161, 51] # low blue2
+        self.buff = True
 
-
-        self.hsv_thresh = 50
+        self.hsv_thresh = 30
         self.bridge = CvBridge()
         self.camera_reference_frame = "camera_color_optical_frame" # 摄像头坐标系
         self.color = (50, 255, 50)
@@ -86,6 +86,7 @@ class Detector(Node):
     # RGB图像回调
     def camera_rgb_cb(self, msg):
         self.cv_rgb = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        self.rgb = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         
 
     # 深度图像回调
@@ -106,13 +107,31 @@ class Detector(Node):
             return
 
         min_rect = self.ColorCubeGet2DwithAngle(self.cv_rgb, self.bgr, self.hsv_thresh)
+            
         if min_rect is None:
             # print("None")
+            mask3 = np.zeros_like(self.rgb)
+            debug = np.concatenate((self.rgb, mask3), axis=1)
+            cv2.imshow("debug_image", debug)
+            cv2.waitKey(1)
             return
+     
+        min_rect, contours = min_rect
+
+        # 创建一个黑色图像，大小与原始图像相同
+        mask2 = np.zeros_like(self.rgb)
+        for cnt in contours:
+            mask = np.zeros_like(self.rgb)
+            cv2.drawContours(mask, [cnt], -1, (255, 255, 255), thickness=cv2.FILLED)
+            roi = cv2.bitwise_and(self.rgb, mask)
+            mask2 = cv2.bitwise_or(mask2, roi)
         
+        debug = np.concatenate((self.cv_rgb, mask2), axis=1)
+        cv2.imshow("debug_image", debug)
+        cv2.waitKey(1)
+
+
         pixel_x, pixel_y = min_rect[0]
-        # cv2.circle(cv_depth, (int(pixel_x), int(pixel_y)), 3, (0, 255, 0), 5)
-        
         width, height = min_rect[1]
         theta = min_rect[2]
         theta = math.radians(theta)
@@ -144,44 +163,15 @@ class Detector(Node):
         point_y = depth * y
         point_z = depth
         
-        # cube_tf0 = TransformStamped()
-        # cube_tf0.header.stamp = self.get_clock().now().to_msg()
-        # cube_tf0.header.frame_id = self.camera_reference_frame
-        # cube_tf0.child_frame_id = "object_tran"
-        # cube_tf0.transform.translation.x = float(point_x) 
-        # cube_tf0.transform.translation.y = float(point_y) 
-        # cube_tf0.transform.translation.z = float(point_z) 
-        # ori = tf_transformations.quaternion_from_euler(0, 0,3.14) # +1.57
-        # cube_tf0.transform.rotation.x = ori[0]
-        # cube_tf0.transform.rotation.y = ori[1]
-        # cube_tf0.transform.rotation.z = ori[2]
-        # cube_tf0.transform.rotation.w = ori[3]
-        # self.tf_pub.sendTransform(cube_tf0)  
 
+        cv2.circle(cv_depth, (int(pixel_x), int(pixel_y)), 3, (0, 255, 0), 5)
+        cv2.circle(self.cv_rgb, (int(pixel_x), int(pixel_y)), 50, (255, 0, 255), 3)
 
-        # cube_tf0.transform.translation.x = float(point_z) 
-        # cube_tf0.transform.translation.y = -float(point_x) 
-        # cube_tf0.transform.translation.z = -float(point_y)   
-
-        # cube_tf.transform.translation.x = -float(point_y) # float(point_z) 
-        # cube_tf.transform.translation.y = -float(point_x) # -float(point_x)
-        # cube_tf.transform.translation.z = -float(point_z) # -float(point_y)
-        # ori = tf_transformations.quaternion_from_euler(3.14, 0, -theta) # +1.57
-
-
-
-
-
-        # print("物体已找到，坐标位置：")
-        # print("Translation: \n", "x:", float(point_x), "\n y:", float(point_y), "\n z:", float(point_z))
-        # print("Rotation: \n", "x:", ori[0], "\n y:", ori[1], "\n z:", ori[2], "\n w:", ori[3])
-        
-
-
-
-        # cv2.imshow("faces_message",rgbd)
-        # cv2.waitKey(1)
         rgbd = np.concatenate((self.cv_rgb, cv_depth), axis=1)
+
+        # cv2.imshow("debug_image",rgbd)
+        # cv2.waitKey(1)
+
         cube_tf = TransformStamped()
         cube_tf.header.stamp = self.get_clock().now().to_msg()
         cube_tf.header.frame_id = self.camera_reference_frame
@@ -200,10 +190,9 @@ class Detector(Node):
         self.tf_pub.sendTransform(cube_tf)
 
 
-
         try:
-            faces_message = self.bridge.cv2_to_imgmsg(rgbd, "bgr8")
-            self.debug_pub.publish(faces_message)
+            # faces_message = self.bridge.cv2_to_imgmsg(rgbd, "bgr8")
+            # self.debug_pub.publish(faces_message)
             pass
         except CvBridgeError as e:
             print(e)
@@ -215,7 +204,6 @@ class Detector(Node):
         red_hsv = self.hsv_values['red']
         blue_hsv = self.hsv_values['blue']
         yellow_hsv = self.hsv_values['yellow']
-
 
 
         # red = [31, 102, 156] # red
@@ -257,7 +245,7 @@ class Detector(Node):
         #6.检测图像中的轮廓
         (contours, hierarchy) = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        
+
         #7.获取水平矩形/最小矩形
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -266,7 +254,7 @@ class Detector(Node):
                 continue
             # (x, y, w, h) = cv2.boundingRect(contour)  #水平矩形
             min_rect = cv2.minAreaRect(contour)  #最小矩形
-            return min_rect
+            return min_rect, contours
             # max_rect = cv2.maxAreaRect(contour)  #最小矩形
             # return max_rect
         
