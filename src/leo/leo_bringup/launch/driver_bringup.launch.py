@@ -55,13 +55,12 @@ if second_string != "None":
 else:
     start_device = 'leo_base_normal'
     
-leo_bringup_dir = get_package_share_directory('leo_bringup')
-leo_bringup_dir = os.path.join(*leo_bringup_dir.split(os.sep)[:4])
-with open('/'+leo_bringup_dir+'/doc/camera.txt', 'r') as file:
+with open('/opt/camera.txt', 'r') as file:
     lines = file.readlines()
 servo1 = lines[1].strip()  
 servo2 = lines[2].strip()
-
+if servo2 == " ":
+    print("========当前为单相机模式========")
 
 def generate_launch_description():
     # --------------------Get the launch directory--------------------

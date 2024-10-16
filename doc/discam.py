@@ -1,9 +1,11 @@
+import sys
+sys.path.append('/home/leo/.local/lib/python3.10/site-packages')
 import pyrealsense2 as rs
 import cv2
 import numpy as np
 import time
 import os
-import sys
+
 
 class Realsense2:
     def __init__(self, camera_id_list = [0], camera_width=1280, camera_height=720, camera_fps=30):
@@ -11,7 +13,7 @@ class Realsense2:
         self.camera_height = camera_height
         self.camera_fps = camera_fps
         self.camera_id_list = camera_id_list
-        with open('../../../../doc/camera.txt', 'r') as f:
+        with open('/opt/camera.txt', 'r') as f:
             self.buff = f.readline()
             self.buff = self.buff[0:len(self.buff)-1]
             print(self.buff)
@@ -83,23 +85,74 @@ class Realsense2:
             pipeline.stop()
         print("camera exit sucessfully.")
 
-if __name__ == '__main__':
-    cap = Realsense2(camera_id_list=[0,1], camera_width=640, camera_height=480) # 
-    cap.camera_config()
-    while True:
-        start = time.time()
-        cap.wait_frames()
-        img0 = cap.rgb_image(0)
-        img1 = cap.rgb_image(1)
-        all_img = cv2.hconcat([img1, img0])
-        
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(all_img,'base camera', (100, 280), font, 2, (255, 255, 255), 2)
-        cv2.putText(all_img,'arm camera', (800, 280), font, 2, (255, 255, 255), 2)
-        cv2.imshow("img", all_img)
-        
-        if cv2.waitKey(1) == ord("q"):
-            break
 
-    cap.stop()
+def one_camera():
+    pipeline = rs.pipeline()
+
+    # 创建配置文件
+    config = rs.config()
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+    # 启动流
+    pipeline.start(config)
+
+    try:
+        while True:
+
+            frames = pipeline.wait_for_frames()
+            color_frame = frames.get_color_frame()
+            if not color_frame:
+                continue
+
+            color_image = np.asanyarray(color_frame.get_data())
+            mask_image = np.zeros_like(color_image)
+
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(mask_image,'no camera', (170, 270), font, 2, (255, 255, 255), 2)
+
+            all_img = cv2.hconcat([color_image, mask_image])
+            cv2.imshow("img", all_img)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    finally:
+        pipeline.stop()
+        cv2.destroyAllWindows()
+
+
+
+if __name__ == '__main__':
+
+    # 获取D435 摄像头设备号
+    num = []
+    ctx = rs.context()
+    if len(ctx.devices) > 0:
+        for d in ctx.devices:
+            # print(d.get_info(rs.camera_info.serial_number))
+            num.append(d.get_info(rs.camera_info.serial_number))
+    else:
+        print("No Intel Device connected")
+
+    if len(num) > 1:
+        cap = Realsense2(camera_id_list=[0,1], camera_width=640, camera_height=480) # 
+        cap.camera_config()
+        while True:
+            start = time.time()
+            cap.wait_frames()
+            img0 = cap.rgb_image(0)
+            img1 = cap.rgb_image(1)
+            all_img = cv2.hconcat([img1, img0])
+            
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(all_img,'base camera', (100, 280), font, 2, (255, 255, 255), 2)
+            cv2.putText(all_img,'arm camera', (800, 280), font, 2, (255, 255, 255), 2)
+            cv2.imshow("img", all_img)
+            
+            if cv2.waitKey(1) == ord("q"):
+                break
+        cap.stop()
+        
+    else:
+        one_camera()
+        pass
+
 

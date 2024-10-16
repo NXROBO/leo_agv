@@ -47,9 +47,7 @@ else:
     start_camera = 'true'
     num = [" ", " "]
 
-leo_bringup_dir = get_package_share_directory('leo_bringup')
-leo_bringup_dir = os.path.join(*leo_bringup_dir.split(os.sep)[:4])
-with open('/'+leo_bringup_dir+'/doc/camera.txt', 'r') as file:
+with open('/opt/camera.txt', 'r') as file:
     lines = file.readlines()
 servo1 = lines[1].strip()  
 servo2 = lines[2].strip()
