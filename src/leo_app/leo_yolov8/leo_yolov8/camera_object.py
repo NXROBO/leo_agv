@@ -27,7 +27,7 @@ class YoloDetection(Node):
         super().__init__('yolo_detection_node')
         # 加载模型
         pt_path = sys.path[0]
-        self.model = YOLO(pt_path + '/config/yolov8n-seg.pt')
+        self.model = YOLO(pt_path + '/config/yolov8n.pt')
         # model_path = os.path.join('/home/leo/leo_agv/src/leo_app/leo_yolov8/yolov8n.pt')  # 构造模型文件的绝对路径
         # self.model = YOLO(model_path)
 
