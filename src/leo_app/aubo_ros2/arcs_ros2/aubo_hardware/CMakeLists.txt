@@ -13,17 +13,29 @@ add_definitions( -DROS_BUILD )
 set(ENV{CPM_SOURCE_CACHE} $ENV{HOME}/.cache/CPM)
 
 # 下载 aubo_sdk 发布包(二进制方式引入)
+    # if(NOT aubo_sdk_POPULATED)
+    #     include(FetchContent)
+    #     FetchContent_Declare(
+    #         aubo_sdk
+	  #   # URL "https://download.aubo-robotics.cn/sdk/aubo_sdk-0.22.2-Linux_x86_64+39abc74.zip"
+    #   URL "https://download.aubo-robotics.cn/sdk/aubo_sdk-0.23.1-Linux_x86_64+71831e1.zip"
+    #     )
+    #     FetchContent_Populate(aubo_sdk)
+    # endif()
     if(NOT aubo_sdk_POPULATED)
         include(FetchContent)
         FetchContent_Declare(
             aubo_sdk
-	    # URL "https://download.aubo-robotics.cn/sdk/aubo_sdk-0.22.2-Linux_x86_64+39abc74.zip"
-      URL "https://download.aubo-robotics.cn/sdk/aubo_sdk-0.23.1-Linux_x86_64+71831e1.zip"
+            URL "${CMAKE_CURRENT_SOURCE_DIR}/config/aubo_sdk-0.23.1-Linux_x86_64+71831e1.zip"    # 使用本地路径
         )
         FetchContent_Populate(aubo_sdk)
     endif()
+
+
 set(aubo_sdk_DIR ${aubo_sdk_SOURCE_DIR}/lib/cmake/aubo_sdk)
 message("aubo_sdk_DIR" ${aubo_sdk_SOURCE_DIR}/lib/cmake/aubo_sdk)
+
+
 
 find_package(aubo_sdk REQUIRED)
 
