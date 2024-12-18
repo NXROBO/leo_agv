@@ -616,8 +616,8 @@ leo_build_map_3d(){
 hsv_cali(){
 	ip_check
 	echo -e "${Info}      颜色方块标定" 
-	# PROJECTPATH=$(cd `dirname $0`; pwd)
-	source /home/leo/leo_agv/install/setup.bash
+	PROJECTPATH=$(cd `dirname $0`; pwd)
+	source ${PROJECTPATH}/install/setup.bash
 
 	echo -e "${Info}    标定开始前请将货物台放至距离狮子座正前方约15cm的位置，并在台上摆放三种（或以上）颜色的方块，如红蓝黄三色    " 
 
@@ -651,8 +651,8 @@ hsv_cali(){
 leo_grasp(){
 	ip_check
 	echo -e "${Info}      让LEO使用机械臂抓取物体" 
-	# PROJECTPATH=$(cd `dirname $0`; pwd)
-	source /home/leo/leo_agv/install/setup.bash
+	PROJECTPATH=$(cd `dirname $0`; pwd)
+	source ${PROJECTPATH}/install/setup.bash
 
 	echo -e "${Info}    将货物台放至距离狮子座正前方约15cm的位置，并在台上摆放三种（或以上）颜色的方块，如红蓝黄三色，方块姿态需垂直于货物台，角度随意。放置台则放至狮子座左侧距离约20cm处。    " 
 
@@ -691,8 +691,8 @@ leo_grasp(){
 leo_yolo_pose(){
 	echo -e "${Info}" 
 	echo -e "${Info}      让LEO使用深度学习进行肢体识别" 
-	# PROJECTPATH=$(cd `dirname $0`; pwd)
-	source /home/leo/leo_agv/install/setup.bash
+	PROJECTPATH=$(cd `dirname $0`; pwd)
+	source ${PROJECTPATH}/install/setup.bash
 
 	echo -e "${Info}    程序启动后，站在狮子座前方，摄像头会自动对身体姿态进行识别。    " 
 
@@ -707,8 +707,8 @@ leo_yolo_pose(){
 leo_yolo_object(){
 	echo -e "${Info}" 
 	echo -e "${Info}      让LEO使用深度学习进行物体识别" 
-	# PROJECTPATH=$(cd `dirname $0`; pwd)
-	source /home/leo/leo_agv/install/setup.bash
+	PROJECTPATH=$(cd `dirname $0`; pwd)
+	source ${PROJECTPATH}/install/setup.bash
 
 	echo -e "${Info}    程序启动后，站在狮子座前方，摄像头会自动识别面前物体类型。    " 
 
@@ -827,7 +827,8 @@ leo_aging_test(){
 		echo -e "${Info}"
 		echo -e "${Info}    退出请输入：Ctrl + c    " 
 		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
-		source /home/leo/leo_agv/install/setup.bash
+		PROJECTPATH=$(cd `dirname $0`; pwd)
+		source ${PROJECTPATH}/install/setup.bash
 		print_command "ros2 launch leo_test leo_test_five_minute.launch.py"
 		ros2 launch leo_test leo_test_five_minute.launch.py 
 		;;
@@ -837,7 +838,8 @@ leo_aging_test(){
 		echo -e "${Info}"
 		echo -e "${Info}    退出请输入：Ctrl + c    " 
 		echo && stty erase ^? && read -p "按回车键（Enter）开始：" 
-		source /home/leo/leo_agv/install/setup.bash
+		PROJECTPATH=$(cd `dirname $0`; pwd)
+		source ${PROJECTPATH}/install/setup.bash
 		print_command "ros2 launch leo_test leo_test_aging.launch.py "
 		ros2 launch leo_test leo_test_aging.launch.py 
 	esac
