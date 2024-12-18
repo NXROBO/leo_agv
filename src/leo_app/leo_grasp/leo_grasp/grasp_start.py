@@ -328,7 +328,7 @@ class AutoAction(Node):
             time.sleep(1)
             self.moveit.pitch_object(-trans_x, trans_y, trans_z, rot_x, rot_y, rot_z, rot_w)
 
-            self.moveit.output_signal(530)     # 机械臂夹爪抓取 550
+            self.moveit.output_signal(0)     # 机械臂夹爪抓取 550
             time.sleep(1)
             self.moveit.pitch_object(-trans_x, trans_y, trans_z + 0.15, rot_x, rot_y, rot_z, rot_w)
 
