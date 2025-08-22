@@ -61,8 +61,28 @@
 			rtu_device_name="$(arg rtu_device_name)"
 		>
 		<!-- position robot in the world -->
-		<origin xyz="0.17 0.0 0.25" rpy="0.0 0.0 1.5708" />
+		<origin xyz="0.15 0.0 0.25" rpy="0.0 0.0 1.5708" />
 		</xacro:aubo_robot>
 	</xacro:if>
 
+	<xacro:if value="${robot_arm_type == 'aubo_ES5'}">
+		<!-- arm link -->
+		<!--   io communication related parameters-->
+		<xacro:arg name="rtu_device_name" default="/dev/ttyUSB0,115200,N,8,1" />
+		<!-- Simulation parameters -->
+		<xacro:arg name="use_fake_hardware" default="false" />
+		<xacro:arg name="tf_prefix" default="" />
+		<xacro:include filename="$(find aubo_description)/urdf/${robot_arm_type}.xacro"/>
+		<xacro:aubo_robot name="aubo"
+			parent="base_link"
+			robot_ip="$(arg robot_ip)"
+			tf_prefix="$(arg tf_prefix)"
+			aubo_type="${robot_arm_type}"
+			use_fake_hardware="$(arg use_fake_hardware)"
+			rtu_device_name="$(arg rtu_device_name)"
+		>
+		<!-- position robot in the world -->
+		<origin xyz="0.13 0.0 0.25" rpy="0.0 0.0 1.5708" />
+		</xacro:aubo_robot>
+	</xacro:if>
 </robot>

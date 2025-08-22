@@ -95,7 +95,7 @@ def generate_launch_description():
     declare_arm_type_tel = DeclareLaunchArgument(
         'arm_type_tel', 
         default_value='uarm',
-        choices=['uarm', 'sagittarius_arm',"aubo_C3", 'aubo_ES3'],
+        # choices=['uarm', 'sagittarius_arm',"aubo_C3", 'aubo_ES3'],
         description='arm name')
     declare_start_base = DeclareLaunchArgument(
         'start_base', 

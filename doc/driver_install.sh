@@ -7,7 +7,8 @@ echo -e "
 请选择机械臂型号:
 ${Green_font_prefix}  1.${Font_color_suffix} aubo_C3
 ${Green_font_prefix}  2.${Font_color_suffix} aubo_ES3
-${Green_font_prefix}  3.${Font_color_suffix} None
+${Green_font_prefix}  3.${Font_color_suffix} aubo_ES5
+${Green_font_prefix}  4.${Font_color_suffix} None
 "
   read -p "请输入数字:" yon
   case "$yon" in
@@ -18,11 +19,14 @@ ${Green_font_prefix}  3.${Font_color_suffix} None
   device="aubo_ES3"
   ;;
   3)
+  device="aubo_ES5"
+  ;;
+  4)
   device="None"
   ;;
   esac
 
-  if [[ "${yon}" != "3" ]]; then
+  if [[ "${yon}" != "4" ]]; then
     read -p "请输入机械臂IP地址:" device_ip
     DEVICE_IP=$device_ip
   else

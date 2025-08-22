@@ -425,7 +425,7 @@ def generate_launch_description():
             "aubo_type",
             default_value="aubo_C3",
             description="Type/series of used UR robot.",
-            choices=["aubo_C3", "aubo_ES3"],
+            # choices=["aubo_C3", "aubo_ES3"],
         )
     )
     declared_arguments.append(
